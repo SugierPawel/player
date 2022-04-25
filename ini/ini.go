@@ -5,7 +5,7 @@ import (
 	"log"
 	"os"
 
-	"github.com/SugierPawel/news/rpc/core"
+	"github.com/SugierPawel/player/rpc/core"
 	"github.com/go-ini/ini"
 )
 

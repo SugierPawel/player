@@ -5,7 +5,7 @@ import (
 	"net/rpc"
 	"strconv"
 
-	"github.com/SugierPawel/news/rpc/core"
+	"github.com/SugierPawel/player/rpc/core"
 )
 
 type Client struct {

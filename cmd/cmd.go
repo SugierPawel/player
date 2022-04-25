@@ -6,8 +6,8 @@ import (
 	"os"
 	"strconv"
 
-	. "github.com/SugierPawel/news/rpc/client"
-	"github.com/SugierPawel/news/rpc/core"
+	. "github.com/SugierPawel/player/rpc/client"
+	"github.com/SugierPawel/player/rpc/core"
 )
 
 var streamConfig *core.StreamConfig

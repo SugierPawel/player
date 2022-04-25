@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/SugierPawel/news/rpc/core"
+	"github.com/SugierPawel/player/rpc/core"
 )
 
 type Server struct {
