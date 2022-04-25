@@ -14,9 +14,9 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/SugierPawel/news/ini"
-	"github.com/SugierPawel/news/rpc/core"
-	"github.com/SugierPawel/news/wss"
+	"github.com/SugierPawel/player/ini"
+	"github.com/SugierPawel/player/rpc/core"
+	"github.com/SugierPawel/player/wss"
 
 	"github.com/pion/interceptor"
 	"github.com/pion/webrtc/v3"
@@ -560,7 +560,7 @@ func changeChannel(client *wss.Client, channel string) {
 		return
 	}
 	if _, ok := SourceToWebrtcMap[sn]; !ok {
-		log.Printf(" << CHANGE CHANNEL << klient: %s nie ma aktywnego połączenia WebRTC ('js':NEWSWEBRTC.rtcpc_connect()), channel: %s", sn, channel)
+		log.Printf(" << CHANGE CHANNEL << klient: %s nie ma aktywnego połączenia WebRTC ('js':NEWSWEBRTC.rtcpConnect()), channel: %s", sn, channel)
 		return
 	}
 	if SourceToWebrtcMap[sn].actualChannel == channel {
@@ -746,7 +746,7 @@ func unRegisterNewReceiver(client *wss.Client) {
 }
 
 func main() {
-	log.Println("NewsPlayer START!")
+	log.Println("Player START!")
 	flag.Parse()
 
 	ListenUDPMap = make(map[string]*listenerConfig)

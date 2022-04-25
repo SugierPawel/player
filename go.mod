@@ -1,4 +1,4 @@
-module github.com/SugierPawel/news
+module github.com/SugierPawel/player
 
 go 1.18
 
