@@ -14,24 +14,23 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/pion/interceptor"
+	"github.com/pion/webrtc/v3"
+
 	"github.com/SugierPawel/player/ini"
 	"github.com/SugierPawel/player/rpc/core"
 	"github.com/SugierPawel/player/wss"
-
-	"github.com/pion/interceptor"
-	"github.com/pion/webrtc/v3"
 )
 
 const (
-	defaultChannel string = "172.26.9.100:1111"
 	sleepTime             = time.Millisecond * 100
+	defaultChannel string = "172.26.9.100:1111"
 	webSocketAddr         = "172.26.9.100:80"
 )
 
 var wssHub *wss.Hub
 var ListenUDPMap map[string]*listenerConfig
 var TracksMap map[string]*TracksConfig
-var syncMap map[string]*SyncConfig
 var SourceToWebrtcMap map[string]*SourceToWebrtcConfig
 var remoteP2PQueueMap map[string]*remoteP2PQueueConfig
 var codec = Codecs{Video: webrtc.MimeTypeH264, Audio: webrtc.MimeTypeOpus}
@@ -72,21 +71,12 @@ type JsMessage struct {
 	Data    string `json:"data"`
 	Channel string `json:"channel"`
 }
-
 type TracksDirectionConfig struct {
 	//Kind map[string]*webrtc.TrackLocalStaticSample
 	Kind map[string]*webrtc.TrackLocalStaticRTP
 }
 type TracksConfig struct {
 	Direction map[string]*TracksDirectionConfig
-}
-type SyncConfig struct {
-	RequestChan  chan SyncMsg
-	ResponseChan chan SyncMsg
-}
-type SyncMsg struct {
-	ts uint32
-	sn uint16
 }
 type Codecs struct {
 	Video string
@@ -103,14 +93,6 @@ var receiverWebrtcConfiguration = webrtc.Configuration{
 		{
 			URLs: []string{"stun:172.26.9.100:5900"},
 		},
-		/*{
-			URLs: []string{
-				"stun:stun.l.google.com:19302",
-				"stun:stun1.l.google.com:19302",
-				"stun:stun2.l.google.com:19302",
-				"stun:stun.l.google.com:19302?transport=udp",
-			},
-		},*/
 	},
 }
 var webrtcConfiguration = webrtc.Configuration{
@@ -141,9 +123,6 @@ func AddRTPsource(sc *core.StreamConfig) {
 
 	initLocalTracks(sc, "RTP")
 	initLocalTracks(sc, "Broadcast")
-
-	//go initH264reader(sc) //-f h264
-	//go initOGGreader(sc) //-f ogg - ale coś nie ma dźwięku...
 
 	go initListenUDP(sc, "audio")
 	go initListenUDP(sc, "video")
@@ -253,75 +232,6 @@ func initListenUDP(sc *core.StreamConfig, kind string) {
 			}
 		}
 	}
-}
-func initH264reader(sc *core.StreamConfig) {
-	/*sn := sc.StreamName
-	pipeName := strings.ReplaceAll(strings.ReplaceAll(sn, ".", "-"), ":", "_") + "_video.pipe"
-
-	if _, err := os.Stat(pipeName); err != nil {
-		err := syscall.Mkfifo(pipeName, 0666)
-		if err != nil {
-			log.Printf("initH264reader, sn: %s, błąd tworzenia pliku fifo: %s, err: %s", sn, pipeName, err)
-		}
-	}
-	pipe, err := os.OpenFile(pipeName, os.O_RDONLY, os.ModeNamedPipe)
-	if err != nil {
-		log.Printf("initH264reader, sn: %s, błąd otwierania pliku fifo: %s, err: %s", sn, pipeName, err)
-	}
-	h264, h264Err := h264reader.NewReader(pipe)
-	if h264Err != nil {
-		panic(h264Err)
-	}
-	for {
-		nal, h264Err := h264.NextNAL()
-		if h264Err == io.EOF {
-			continue
-		}
-		if h264Err != nil {
-			panic(h264Err)
-		}
-		//log.Printf("unitType: %s", nal.UnitType.String())
-		if h264Err = TracksMap[sn].Direction["Broadcast"].Kind["video"].WriteSample(media.Sample{Data: nal.Data, Duration: time.Second}); h264Err != nil {
-			panic(h264Err)
-		}
-	}*/
-}
-func initOGGreader(sc *core.StreamConfig) {
-	/*sn := sc.StreamName
-	pipeName := strings.ReplaceAll(strings.ReplaceAll(sn, ".", "-"), ":", "_") + "_audio.pipe"
-
-	if _, err := os.Stat(pipeName); err != nil {
-		err := syscall.Mkfifo(pipeName, 0666)
-		if err != nil {
-			log.Printf("initH264reader, sn: %s, błąd tworzenia pliku fifo: %s, err: %s", sn, pipeName, err)
-		}
-	}
-	pipe, err := os.OpenFile(pipeName, os.O_RDONLY, os.ModeNamedPipe)
-	if err != nil {
-		log.Printf("initH264reader, sn: %s, błąd otwierania pliku fifo: %s, err: %s", sn, pipeName, err)
-	}
-	ogg, _, oggErr := oggreader.NewWith(pipe)
-	if oggErr != nil {
-		panic(oggErr)
-	}
-	var lastGranule uint64
-	for {
-		pageData, pageHeader, oggErr := ogg.ParseNextPage()
-		if oggErr == io.EOF {
-			continue
-		}
-
-		if oggErr != nil {
-			panic(oggErr)
-		}
-		sampleCount := float64(pageHeader.GranulePosition - lastGranule)
-		lastGranule = pageHeader.GranulePosition
-		sampleDuration := time.Duration((sampleCount/48000)*1000) * time.Millisecond
-
-		if oggErr = TracksMap[sn].Direction["Broadcast"].Kind["audio"].WriteSample(media.Sample{Data: pageData, Duration: sampleDuration}); oggErr != nil {
-			panic(oggErr)
-		}
-	}*/
 }
 
 func localRTPofferer(sn string, offerSDP chan<- string, answerSDP <-chan string, iceOffer chan<- *webrtc.ICECandidate, iceAnswer <-chan *webrtc.ICECandidate) {
@@ -753,16 +663,6 @@ func main() {
 	SourceToWebrtcMap = make(map[string]*SourceToWebrtcConfig)
 	remoteP2PQueueMap = make(map[string]*remoteP2PQueueConfig)
 	TracksMap = make(map[string]*TracksConfig)
-	syncMap = make(map[string]*SyncConfig)
-
-	syncMap["audio"] = &SyncConfig{
-		RequestChan:  make(chan SyncMsg),
-		ResponseChan: make(chan SyncMsg),
-	}
-	syncMap["video"] = &SyncConfig{
-		RequestChan:  make(chan SyncMsg),
-		ResponseChan: make(chan SyncMsg),
-	}
 
 	go ini.ReadIniConfig()
 	go core.StartCMDServer()
