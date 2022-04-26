@@ -1,4 +1,31 @@
-﻿.root {
+﻿body {
+    position: absolute;
+    
+    font-family                 : MyriaProRegular;
+    -webkit-font-smoothing      : antialiased;
+    -moz-osx-font-smoothing     : grayscale;
+    -ms-text-size-adjust        : 100%;
+    -webkit-text-size-adjust    : 100%;
+    
+    margin: 0;
+    padding: 0;
+    
+    top: 0px;
+    left: 0px;
+    
+    height: 100%;
+    width: 100%;
+    
+    overflow: hidden;
+}
+hr, html, i, iframe, div, img, ins, kbd, label, legend, ul, li, menu, object, ol, p, pre, q, s, samp, small, span, strike, strong, sub {
+    margin      : 0px;
+    padding     : 0px;
+    border      : 0px none;
+    font-size   : 100%;
+    background  : transparent none repeat scroll 0% 0%;
+}
+.root {
     background: transparent;
     background-color: transparent;
 }
