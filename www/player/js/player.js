@@ -790,7 +790,7 @@ var WebRTC = function (m)
         m.Open();
     };
     
-    m.Connect = function(force)
+    m.Open = function(force)
     {
         if (m.rtcpc && !force)
         {
