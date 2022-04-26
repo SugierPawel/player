@@ -1,21 +1,16 @@
 ﻿body {
     position: absolute;
-    
-    font-family                 : MyriaProRegular;
-    -webkit-font-smoothing      : antialiased;
-    -moz-osx-font-smoothing     : grayscale;
-    -ms-text-size-adjust        : 100%;
-    -webkit-text-size-adjust    : 100%;
-    
+    font-family: MyriaProRegular;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    -ms-text-size-adjust: 100%;
+    -webkit-text-size-adjust: 100%;
     margin: 0;
     padding: 0;
-    
     top: 0px;
     left: 0px;
-    
     height: 100%;
     width: 100%;
-    
     overflow: hidden;
 }
 hr, html, i, iframe, div, img, ins, kbd, label, legend, ul, li, menu, object, ol, p, pre, q, s, samp, small, span, strike, strong, sub {
@@ -129,12 +124,10 @@ hr, html, i, iframe, div, img, ins, kbd, label, legend, ul, li, menu, object, ol
     }
 }
 [id="root"] > .listPanel {
-    float       : top;
-    position    : relative;
-    margin-top  : 5px;
-    padding     : 5px;
-    height      : auto;
-    width       : 100%;
+    position: relative;
+    padding: 5px;
+    height: auto;
+    width: 100%;
     border: 1px solid;
     border-bottom-color: darkgray;
     border-right-color: darkgray;
@@ -194,7 +187,7 @@ hr, html, i, iframe, div, img, ins, kbd, label, legend, ul, li, menu, object, ol
     border-top-color: darkgray;
     border-radius: 2px;
     top: 3px;
-    right: -10px;
+    right: 3px;
     padding-left: 2px;
     padding-right: 2px;
 }
