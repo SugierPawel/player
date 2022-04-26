@@ -3,6 +3,7 @@
     "use strict";
     m.name = "Engine";
     m.modules = new Object();
+    m.root = undefined;
     m.IsRegistered = function (module) {
         if (!window[module]) {
             LOG.Write(LOG.ERROR, "Nie ma takiego modułu:", module);
@@ -31,6 +32,19 @@
         else
         {
             console.log("RegisterModule:", methods.name);
+        };
+        return true;
+    };
+    m.Init = function () {
+        if (!document.getElementById("root"))
+        {
+            m.root = document.createElement("div");
+            m.root.setAttribute("id", "root");
+            m.root.setAttribute("class", "root");
+            document.body.appendChild(m.root);
+        }
+        else {
+            m.root = document.getElementById("root");
         };
         return true;
     };
@@ -869,7 +883,6 @@ var Player = function (m)
     m.channel = null
     m.listMap = new Object();
     m.listSelect = null;
-    m.root = null;
     m.video = null;
 
     m.p2psendICE = function()
@@ -1013,25 +1026,20 @@ var Player = function (m)
 
     m.Init = function()
     {
-        m.root = document.createElement("div");
-        m.root.setAttribute("id", "root");
-        m.root.setAttribute("class", "root");
-        document.body.appendChild(m.root);
-        
         var info = document.createElement('a');
         info.setAttribute('class', 'title_a');
         info.setAttribute('data-title', 'Player');
-        m.root.appendChild(info);
+        Engine.root.appendChild(info);
 
         var listPanel = document.createElement('div');
         listPanel.setAttribute('id', 'listPanel');
         listPanel.setAttribute('class', 'listPanel');
-        m.root.appendChild(listPanel);
+        Engine.root.appendChild(listPanel);
 
         var playerPanel = document.createElement('div');
         playerPanel.setAttribute('id', 'playerPanel');
         playerPanel.setAttribute('class', 'playerPanel');
-        m.root.appendChild(playerPanel);
+        Engine.root.appendChild(playerPanel);
 
         m.listSelect = document.createElement("select");
         m.listSelect.setAttribute('id', 'channelsList');
@@ -1069,6 +1077,7 @@ var Player = function (m)
 !function ()
 {
     window["Engine"] = Engine(new Object());
+    Engine.Init();
     Engine.RegisterModule(Tools);
     Engine.RegisterModule(Log);
     Engine.RegisterModule(Ws);
