@@ -637,7 +637,7 @@ var WebRTC = function (m)
             },
             {
                 url: "stun:conf.polsat.com.pl:443?transport=tcp"
-            }
+            },
             {
                 url: "stun:conf.polsat.com.pl:443?transport=udp"
             }
