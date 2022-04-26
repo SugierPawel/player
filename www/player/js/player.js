@@ -889,7 +889,7 @@ var Player = function (m)
     {
         switch(m.connectionStatus){
             case Ws.CONNECTION_CLOSED:
-                Ws.Connect();
+                Ws.Open();
                 break;
             case Ws.CONNECTION_PENDING:
                 break;
@@ -920,7 +920,7 @@ var Player = function (m)
             return;
         switch(m.connectionStatus){
             case m.CONNECTION_CLOSED:
-                Ws.Connect();
+                Ws.Open();
                 break;
             case Ws.CONNECTION_PENDING:
                 break;
