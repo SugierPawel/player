@@ -390,7 +390,7 @@ var Ws = function (m)
     m.hostUrlPrefix = window.location.protocol == "chrome-extension:" ? "https:" : window.location.protocol === "https:" ? "https:" : "http:";
     m.protocol = window.location.protocol == "chrome-extension:" ? "wss" : window.location.protocol === "https:" ? "wss" : "ws";
     m.port = window.location.protocol == "chrome-extension:" ? "443" : window.location.protocol === "https:" ? "443" : "80";
-    m.wsAddr = m.protocol + "://" + m.host + ":" + m.port + "/signal/";
+    m.wsAddr = m.protocol + "://" + m.host + ":" + m.port + "/signal";
     
     m.socket = null;
     m.CONNECTION_CLOSED = 0
