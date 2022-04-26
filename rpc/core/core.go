@@ -22,14 +22,12 @@ const (
 )
 
 type StreamConfig struct {
-	StreamName    string
-	Request       string
-	IPIn          string
-	VideoPortIn   int
-	AudioPortIn   int
-	BroadcastIP   string
-	BroadcastPort uint64
-	ChannelName   string
+	StreamName  string
+	Request     string
+	IPIn        string
+	VideoPortIn int
+	AudioPortIn int
+	ChannelName string
 }
 
 /*

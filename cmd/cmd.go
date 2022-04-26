@@ -35,33 +35,22 @@ func runClient() {
 
 func main() {
 	if len(os.Args) < 3 || os.Args[1] == "" {
-		log.Println("dodanie kanału: AddRTPsource [IP in] [video port in] [audio port in] [broadcast IP out] [broadcast port out] [nazwa]")
+		log.Println("dodanie kanału: AddRTPsource [IP in] [video port in] [audio port in] [nazwa]")
 		log.Println("kasowanie kanału: DelRTPsource [IP in] [video port in]")
 		os.Exit(3)
 	} else {
 		streamConfig = new(core.StreamConfig)
 		streamConfig.Request = os.Args[1]
-
 		switch streamConfig.Request {
 		case "AddRTPsource":
-
-			IPIn := net.ParseIP(os.Args[2])
-			BroadcastIP := net.ParseIP(os.Args[5])
-
-			streamConfig.IPIn = IPIn.To4().String()
+			streamConfig.IPIn = net.ParseIP(os.Args[2]).To4().String()
 			streamConfig.VideoPortIn, _ = strconv.Atoi(os.Args[3])
 			streamConfig.AudioPortIn, _ = strconv.Atoi(os.Args[4])
-			streamConfig.BroadcastIP = BroadcastIP.To4().String()
-			streamConfig.BroadcastPort, _ = strconv.ParseUint(os.Args[6], 10, 64)
-			streamConfig.ChannelName = os.Args[7]
-
+			streamConfig.ChannelName = os.Args[5]
 		case "DelRTPsource":
-
-			IPIn := net.ParseIP(os.Args[2])
-			streamConfig.IPIn = IPIn.To4().String()
+			streamConfig.IPIn = net.ParseIP(os.Args[2]).To4().String()
 			streamConfig.VideoPortIn, _ = strconv.Atoi(os.Args[3])
 		}
-
 		log.Printf("streamConfig: %+v\n", streamConfig)
 	}
 	runClient()
