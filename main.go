@@ -12,6 +12,7 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"sync"
 	"time"
 
 	"github.com/pion/interceptor"
@@ -53,6 +54,7 @@ type remoteP2PQueueConfig struct {
 	offer chan offerConfig
 }
 type SourceToWebrtcConfig struct {
+	access               sync.Mutex
 	mediaEngine          *webrtc.MediaEngine
 	interceptor          *interceptor.Registry
 	settingEngine        *webrtc.SettingEngine
@@ -427,6 +429,7 @@ func StartWebSocketServer() {
 		case cm := <-wssHub.UnregisterReceiver:
 			unRegisterNewReceiver(cm.Client)
 		case cm := <-wssHub.RegisterReceiver:
+			initNewReceiver(cm.Client)
 			go registerNewReceiver(cm.Client)
 		case cm := <-wssHub.Receiver:
 			var jsMsg JsMessage
@@ -510,15 +513,8 @@ func changeChannel(client *wss.Client, channel string) {
 	}
 	SourceToWebrtcMap[sn].actualChannel = channel
 }
-func registerNewReceiver(client *wss.Client) {
-	var err error
-	var fName string = "registerNewReceiver"
+func initNewReceiver(client *wss.Client) {
 	var sn = client.Conn.RemoteAddr().String()
-	if _, ok := SourceToWebrtcMap[sn]; ok {
-		return
-	}
-	log.Printf(" << REGISTER NEW RECEIVER << %s", sn)
-
 	remoteP2PQueueMap[sn] = new(remoteP2PQueueConfig)
 	remoteP2PQueueMap[sn].offer = make(chan offerConfig)
 	remoteP2PQueueMap[sn].ice = make(chan iceConfig, 20)
@@ -528,6 +524,12 @@ func registerNewReceiver(client *wss.Client) {
 	SourceToWebrtcMap[sn].interceptor = &interceptor.Registry{}
 	SourceToWebrtcMap[sn].receiverExitChan = make(chan bool)
 	SourceToWebrtcMap[sn].actualChannel = ""
+}
+func registerNewReceiver(client *wss.Client) {
+	var err error
+	var fName string = "registerNewReceiver"
+	var sn = client.Conn.RemoteAddr().String()
+	log.Printf(" << REGISTER NEW RECEIVER << %s", sn)
 
 	if err := SourceToWebrtcMap[sn].mediaEngine.RegisterCodec(webrtc.RTPCodecParameters{
 		RTPCodecCapability: webrtc.RTPCodecCapability{MimeType: codec.Video, ClockRate: 90000 /*, Channels: 0, SDPFmtpLine: "", RTCPFeedback: nil*/},
