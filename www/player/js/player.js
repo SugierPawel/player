@@ -594,7 +594,7 @@ var WebRTC = function (m)
     m.rtcpcConfiguration = {
         iceServers: [
             {
-                url: "turn:conf.polsat.com.pl:433?transport=tcp",
+                url: "turn:conf.polsat.com.pl:433",
                 username: "turnserver",
                 credential: "turnserver"
             },
