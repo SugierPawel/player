@@ -1068,8 +1068,6 @@ var Player = function (m)
         });
         Ws.RegisterOnClose(function()
         {
-            m.AddChannel(JSON.stringify({StreamName:"default",ChannelName:"ładuję listę..."}));
-            m.listMap["default"].option.setAttribute("selected", "");
             m.listSelect.disabled = true;
         });
         Ws.Open();
