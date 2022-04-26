@@ -429,7 +429,6 @@ func StartWebSocketServer() {
 		case cm := <-wssHub.UnregisterReceiver:
 			unRegisterNewReceiver(cm.Client)
 		case cm := <-wssHub.RegisterReceiver:
-			initNewReceiver(cm.Client)
 			go registerNewReceiver(cm.Client)
 		case cm := <-wssHub.Receiver:
 			var jsMsg JsMessage
@@ -513,8 +512,12 @@ func changeChannel(client *wss.Client, channel string) {
 	}
 	SourceToWebrtcMap[sn].actualChannel = channel
 }
-func initNewReceiver(client *wss.Client) {
+func registerNewReceiver(client *wss.Client) {
+	var err error
+	var fName string = "registerNewReceiver"
 	var sn = client.Conn.RemoteAddr().String()
+	log.Printf(" << REGISTER NEW RECEIVER << %s", sn)
+
 	remoteP2PQueueMap[sn] = new(remoteP2PQueueConfig)
 	remoteP2PQueueMap[sn].offer = make(chan offerConfig)
 	remoteP2PQueueMap[sn].ice = make(chan iceConfig, 20)
@@ -524,12 +527,6 @@ func initNewReceiver(client *wss.Client) {
 	SourceToWebrtcMap[sn].interceptor = &interceptor.Registry{}
 	SourceToWebrtcMap[sn].receiverExitChan = make(chan bool)
 	SourceToWebrtcMap[sn].actualChannel = ""
-}
-func registerNewReceiver(client *wss.Client) {
-	var err error
-	var fName string = "registerNewReceiver"
-	var sn = client.Conn.RemoteAddr().String()
-	log.Printf(" << REGISTER NEW RECEIVER << %s", sn)
 
 	if err := SourceToWebrtcMap[sn].mediaEngine.RegisterCodec(webrtc.RTPCodecParameters{
 		RTPCodecCapability: webrtc.RTPCodecCapability{MimeType: codec.Video, ClockRate: 90000 /*, Channels: 0, SDPFmtpLine: "", RTCPFeedback: nil*/},
@@ -686,7 +683,7 @@ func main() {
 			case core.DelRTPsourceRequest:
 				ini.DeleteSection(sc)
 			}
-		case <-time.After(sleepTime):
+		case <-time.After(sleepTime * 3):
 		}
 	}
 }
