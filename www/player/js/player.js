@@ -1010,7 +1010,8 @@ var Player = function (m)
     m.FillChannelsList = function(data)
     {
         m.listSelect.disabled = false;
-        m.listMap["default"].option.text = "wybierz kanał!"
+        if (m.listMap["default"])
+            m.listMap["default"].option.text = "wybierz kanał!"
         var list = JSON.parse(data);
         for (const ns in m.listMap)
             if (!list[ns] && ns !== "default")
@@ -1067,6 +1068,8 @@ var Player = function (m)
         });
         Ws.RegisterOnClose(function()
         {
+            m.AddChannel(JSON.stringify({StreamName:"default",ChannelName:"ładuję listę..."}));
+            m.listMap["default"].option.setAttribute("selected", "");
             m.listSelect.disabled = true;
         });
         Ws.Open();
