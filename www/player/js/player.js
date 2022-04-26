@@ -405,7 +405,6 @@ var Ws = function (m)
         Log.Write(Log.INFO, "socket _onopen, addr: " + e.target.url);
         m.connectionStatus = m.CONNECTION_OK;
         m.SetConnectionMonitState("connected");
-        Player.p2psend();
         for (var i in m.bindedOnOpen)
             m.bindedOnOpen[i]();
     };
@@ -1064,6 +1063,7 @@ var Player = function (m)
         m.Init();
         Ws.RegisterOnOpen(function()
         {
+            m.p2psend();
         });
         Ws.RegisterOnClose(function()
         {
