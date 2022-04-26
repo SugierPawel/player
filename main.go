@@ -25,7 +25,7 @@ import (
 const (
 	sleepTime             = time.Millisecond * 100
 	defaultChannel string = "172.26.9.100:1111"
-	webSocketAddr         = "172.26.9.100:80"
+	webSocketAddr         = "172.26.9.100:2000"
 )
 
 var wssHub *wss.Hub
@@ -413,7 +413,7 @@ func StartWebSocketServer() {
 	log.Println("StartWebSocketServer")
 	wssHub = wss.NewHub()
 	go wssHub.Run()
-	http.HandleFunc("/webrtc", func(w http.ResponseWriter, r *http.Request) {
+	http.HandleFunc("/signal", func(w http.ResponseWriter, r *http.Request) {
 		wss.WebSocketAccept(wssHub, w, r)
 	})
 	go func() {
