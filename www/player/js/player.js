@@ -594,6 +594,11 @@ var WebRTC = function (m)
     m.rtcpcConfiguration = {
         iceServers: [
             {
+                url: "turn:conf.polsat.com.pl:433?transport=tcp",
+                username: "turnserver",
+                credential: "turnserver"
+            },
+            {
                 url: "turn:172.26.9.100:5900?transport=udp",
                 username: "turnserver",
                 credential: "turnserver"
@@ -614,10 +619,18 @@ var WebRTC = function (m)
                 credential: "turnserver"
             },
             {
+                url: "turn:conf.polsat.com.pl:433?transport=udp",
+                username: "turnserver",
+                credential: "turnserver"
+            },
+            {
                 url: "stun:172.26.9.100:5900?transport=tcp"
             },
             {
                 url: "stun:conf.polsat.com.pl:3478?transport=tcp"
+            },
+            {
+                url: "stun:conf.polsat.com.pl:443?transport=tcp"
             }
         ]
     };
