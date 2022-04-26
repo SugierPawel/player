@@ -16,23 +16,22 @@
             console.error("RegisterModule, typeof func:", func);
             return false;
         };
-        let methods = func(new Object());
-        for (let p in methods)
+        var methods = func(new Object());
+        for (var p in methods)
             if (typeof methods[p] == "function")
                 methods[p].Name = p; //nadajemy nazwę dla poprawnego działania LOG.Help();
-        let funcs = "";
-        let name = m.name;
-        window[name] = methods;
-        m.modules[name] = true;
+                var funcs = "";
+        window[methods.name] = methods;
+        m.modules[methods.name] = true;
         if (funcs != "")
             return true;
         if (window["Log"] && typeof window["Log"].Write == "function")
         {
-            Log.Write(Log.INFO, name);
+            Log.Write(Log.INFO, methods.name);
         }
         else
         {
-            console.log("RegisterModule:", name);
+            console.log("RegisterModule:", methods.name);
         };
         return true;
     };
@@ -109,7 +108,7 @@ var Tools = function (m)
     m.SetMeta = function (el, name, content) {
         el = ("querySelector" in el) ? el : el.document;
         if (!el.querySelector("meta[name=" + name + "]")) {
-            let meta = el.createElement("meta");
+            var meta = el.createElement("meta");
             meta.setAttribute("name", name);
             el.getElementsByTagName("head")[0].appendChild(meta);
         }
@@ -118,7 +117,7 @@ var Tools = function (m)
     };
     m.GetClassValue = function (id, property, float) {
         if (!float) float = false;
-        let value = window.getComputedStyle(document.getElementById(id)).getPropertyValue(property);
+        var value = window.getComputedStyle(document.getElementById(id)).getPropertyValue(property);
         if (value.length == 0) return undefined;
         return float ? parseFloat(value) : value;
     };
@@ -133,10 +132,10 @@ var Tools = function (m)
         };
     };
     m.GetFunctionArguments = function (module, method) {
-        let str = window[module][method].toString();
-        let replace = str.replace(/((\/\/.*$)|(\/\*[\s\S]*?\*\/)|(\s))/mg, "");
-        let match = replace.match(/^function\s*[^\(]*\(\s*([^\)]*)\)/m)[1];
-        let split = match.split(/,/);
+        var str = window[module][method].toString();
+        var replace = str.replace(/((\/\/.*$)|(\/\*[\s\S]*?\*\/)|(\s))/mg, "");
+        var match = replace.match(/^function\s*[^\(]*\(\s*([^\)]*)\)/m)[1];
+        var split = match.split(/,/);
         return split;
         /*return window[module][method].toString()
             .replace(/((\/\/.*$)|(\/\*[\s\S]*?\*\/)|(\s))/mg, "")
@@ -144,7 +143,7 @@ var Tools = function (m)
             .split(/,/);*/
     };
     m.IsIeBrowser = function () {
-        let ua = window.navigator.userAgent;
+        var ua = window.navigator.userAgent;
         return /MSIE|Trident|Edge/.test(ua);
     };
     m.IsFunc = function (func) {
@@ -155,7 +154,7 @@ var Tools = function (m)
         return true;
     };
     m.FromJson = function (str) {
-        let obj = new Object();
+        var obj = new Object();
         try {
             obj = JSON.parse(str)
         }
@@ -165,7 +164,7 @@ var Tools = function (m)
         return obj;
     };
     m.ToJson = function (obj) {
-        let json = "";
+        var json = "";
         try {
             json = JSON.stringify(obj)
         }
@@ -176,8 +175,8 @@ var Tools = function (m)
     };
     m.CheckArguments = function (params)
     {
-        let args = Array.prototype.slice.call(params);
-        for (let i = 0; i < args.length; i++)
+        var args = Array.prototype.slice.call(params);
+        for (var i = 0; i < args.length; i++)
         {
             if (
                 typeof args[i] != "boolean" &&
@@ -193,15 +192,15 @@ var Tools = function (m)
     };
     m.ConvertToSpaces = function (str)
     {
-        let spaces = "";
-        for (let i = 0; i < str.length; i++)
+        var spaces = "";
+        for (var i = 0; i < str.length; i++)
             spaces += " ";
         return spaces;
     };
     m.GetRandomString = function (length) {
-        let chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-        let result = "";
-        for (let i = 0; i < length; i++)
+        var chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+        var result = "";
+        for (var i = 0; i < length; i++)
             result += chars.charAt(Math.floor(Math.random() * chars.length));
         return result;
     };
@@ -329,12 +328,12 @@ var Log = function (m)
         return true;
     };
     m.Write = function (type, msg, param) {
-        let time = Tools.GetDate((new Date()).getTime());
-        let module = "";
-        let method = "";
+        var time = Tools.GetDate((new Date()).getTime());
+        var module = "";
+        var method = "";
         try {
-            let stack = (new Error()).stack.split("\n")[2].trim().split(" ");
-            let split = stack[1].split(".");
+            var stack = (new Error()).stack.split("\n")[2].trim().split(" ");
+            var split = stack[1].split(".");
             module = split[1];
             method = split[3];
             if (split[1] == "eval") {
@@ -345,8 +344,8 @@ var Log = function (m)
             };
         } catch (ex) {
         };
-        let _msg = time + (module == "onerror" ? "" : " - " + module + "::" + method) + " - " + msg;
-        let _param = !param ? "" : ", " + param;
+        var _msg = time + (module == "onerror" ? "" : " - " + module + "::" + method) + " - " + msg;
+        var _param = !param ? "" : ", " + param;
         if (m.textarea !== undefined) m.debugLog(time + " - " + type + " - " + module + "::" + method + " - " + msg + _param);
         switch (type) {
             case m.WARN:
@@ -363,7 +362,7 @@ var Log = function (m)
                 break;
         };
         window.onerror = function (message, url, line, column, error) {
-            let _url = url.split("/");
+            var _url = url.split("/");
             m.Write(LOG.ERROR, _url[3] + ", line: " + line + " >> " + error, message);
         };
         return true;
