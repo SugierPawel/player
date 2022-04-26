@@ -6,7 +6,7 @@
     m.root = undefined;
     m.IsRegistered = function (module) {
         if (!window[module]) {
-            LOG.Write(LOG.ERROR, "Nie ma takiego modułu:", module);
+            Log.Write(Log.ERROR, "Nie ma takiego modułu:", module);
             return false;
         };
         return true;
@@ -19,7 +19,7 @@
         var methods = func(new Object());
         for (var p in methods)
             if (typeof methods[p] == "function")
-                methods[p].Name = p; //nadajemy nazwę dla poprawnego działania LOG.Help();
+                methods[p].Name = p; //nadajemy nazwę dla poprawnego działania Log.Help();
                 var funcs = "";
         window[methods.name] = methods;
         m.modules[methods.name] = true;
@@ -363,7 +363,7 @@ var Log = function (m)
         };
         window.onerror = function (message, url, line, column, error) {
             var _url = url.split("/");
-            m.Write(LOG.ERROR, _url[3] + ", line: " + line + " >> " + error, message);
+            m.Write(Log.ERROR, _url[3] + ", line: " + line + " >> " + error, message);
         };
         return true;
     };
