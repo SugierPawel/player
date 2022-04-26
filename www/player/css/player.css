@@ -73,7 +73,7 @@ hr, html, i, iframe, div, img, ins, kbd, label, legend, ul, li, menu, object, ol
     width: auto;
     margin: 0px 0 0 -5px;
 }
-[data-type="connection_monit"] > .info_a::before {
+[id="ConnectionMonit"] > .info_a::before {
     content: "" attr(data-info);
 }
 @keyframes connection-spinner-spin {
@@ -128,7 +128,7 @@ hr, html, i, iframe, div, img, ins, kbd, label, legend, ul, li, menu, object, ol
         border-top-color: #73859f;
     }
 }
-.listPanel {
+[id="root"] > .listPanel {
     float       : top;
     position    : relative;
     margin-top  : 5px;
@@ -141,8 +141,7 @@ hr, html, i, iframe, div, img, ins, kbd, label, legend, ul, li, menu, object, ol
     border-left-color: darkgray;
     border-top-color: darkgray;
 }
-
-.playerPanel {
+[id="root"] > .playerPanel {
     position: relative;
     display: grid;
     margin-left: 5px;
@@ -150,7 +149,7 @@ hr, html, i, iframe, div, img, ins, kbd, label, legend, ul, li, menu, object, ol
     width: calc(100% - 7px);
     overflow-y: auto;
 }
-.channelsList {
+[id="listPanel"] > .channelsList {
     position: relative;
     height: 40px;
     width: 200px;
@@ -161,18 +160,16 @@ hr, html, i, iframe, div, img, ins, kbd, label, legend, ul, li, menu, object, ol
     color: #000000;
     cursor: pointer;
 }
-.video {
+[id="playerPanel"] > .video {
     top: 5px;
     position: relative;
-    display: inline-block;
-    text-align: center;
     margin: 0 auto;
-    width: calc(100% - 10px);
+    width: 100%;
     max-width: 640px;
     height: auto;
 }
 
-.title_a {
+[id="root"] > .title_a {
     float: right;
     position: absolute;
     font-size: 20px;
@@ -200,6 +197,6 @@ hr, html, i, iframe, div, img, ins, kbd, label, legend, ul, li, menu, object, ol
     padding-left: 2px;
     padding-right: 2px;
 }
-.title_a::before {
+[id="root"] > .title_a::before {
     content: attr(data-title); 
 }
