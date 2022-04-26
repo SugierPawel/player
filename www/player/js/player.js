@@ -886,7 +886,7 @@ var Player = function (m)
 
     m.p2psendICE = function()
     {
-        switch(m.connectionStatus){
+        switch(Ws.connectionStatus){
             case Ws.CONNECTION_CLOSED:
                 Ws.Open();
                 break;
@@ -917,8 +917,8 @@ var Player = function (m)
     {
         if (!m.local.offer)
             return;
-        switch(m.connectionStatus){
-            case m.CONNECTION_CLOSED:
+        switch(Ws.connectionStatus){
+            case Ws.CONNECTION_CLOSED:
                 Ws.Open();
                 break;
             case Ws.CONNECTION_PENDING:
