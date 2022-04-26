@@ -1009,8 +1009,8 @@ var Player = function (m)
     };
     m.FillChannelsList = function(data)
     {
-        m.listMap["default"].option.text = "wybierz kanał!"
         m.listSelect.disabled = false;
+        m.listMap["default"].option.text = "wybierz kanał!"
         var list = JSON.parse(data);
         for (const ns in m.listMap)
             if (!list[ns] && ns !== "default")
