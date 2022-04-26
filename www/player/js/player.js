@@ -443,7 +443,7 @@ var Ws = function (m)
         m.SetConnectionMonitState("disconnected");
         m.Close();
         m.socket = null;
-        m.Connect();
+        m.Open();
     };
     m._onerror = function (e) {
         Log.Write(Log.ERROR, "socket _onerror, addr: " + e.target.url + ", err: " + e.data);
@@ -501,7 +501,7 @@ var Ws = function (m)
     {
         clearTimeout(m.connectTimeoutID);
         m.connectTimeoutID = null;
-        m.Connect();
+        m.Open();
     };
 
     m.RegisterOnOpen = function (func) {
@@ -703,7 +703,7 @@ var WebRTC = function (m)
                 Log.Write(Log.WARN, 'onConnectionStateChange unknown state', m.info());
                 break;
         };
-        m.Connect();
+        m.Open();
     };
     
     m.onIceCandidate = function(event)
@@ -787,7 +787,7 @@ var WebRTC = function (m)
     {
         clearTimeout(m.connectTimeoutID);
         m.connectTimeoutID = null;
-        m.Connect();
+        m.Open();
     };
     
     m.Connect = function(force)
@@ -979,7 +979,7 @@ var Player = function (m)
         m.listMap[e.target.value].option.setAttribute("selected", "");
         
         m.channel = e.target.value;
-        WebRTC.Connect(true);
+        WebRTC.Open(true);
         
         m.DelChannel(JSON.stringify({StreamName:"default"}));
     };
