@@ -28,6 +28,11 @@ hr, html, i, iframe, div, img, ins, kbd, label, legend, ul, li, menu, object, ol
 .root {
     background: transparent;
     background-color: transparent;
+    position        : relative;
+    left            : 0px;
+    z-index         : 180;
+    width           : inherit;
+    height          : inherit;
 }
 .ConnectionMonit {
     position: absolute;
