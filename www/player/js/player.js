@@ -1,93 +1,4 @@
-﻿var Log = function (m)
-{
-    "use strict";
-    m.name = "Log";
-    m.ERROR = "error";
-    m.INFO = "info";
-    m.WARN = "warn";
-    m.textarea = undefined;
-    m.CreateScreenLog = function () {
-        m.textarea = document.createElement("textarea");
-        m.textarea.setAttribute("id", "debugLogTextarea");
-        m.textarea.style.display = "none";
-        m.textarea.style.top = "50%";
-        m.textarea.style.position = "fixed";
-        m.textarea.style.width = "100%";//100vw
-        m.textarea.style.height = "50%";//50vh
-        m.textarea.style.color = "black";
-        m.textarea.style.fontSize = "10px";
-        m.textarea.style.fontWeight = "bold";
-        m.textarea.style.padding = "5px 5px 5px 5px";
-        m.textarea.style.textDecoration = "none";
-        m.textarea.style.textAlign = "left";
-        m.textarea.style.cursor = "pointer";
-        m.textarea.style.zIndex = "9999";
-        Engine.root.appendChild(m.textarea);
-        return true;
-    };
-    m.Show = function () {
-        m.textarea.style.display = "";
-        return true;
-    };
-    m.Hide = function () {
-        m.textarea.style.display = "none";
-        return true;
-    };
-    m.debugLog = function (msg) {
-        m.textarea.appendChild(document.createTextNode(msg + "\r\n"));
-        m.textarea.scrollTop = m.textarea.scrollHeight;
-        return true;
-    };
-    m.Write = function (type, msg, param) {
-        let time = Tools.GetDate((new Date()).getTime());
-        let module = "";
-        let method = "";
-        try {
-            let stack = (new Error()).stack.split("\n")[2].trim().split(" ");
-            let split = stack[1].split(".");
-            module = split[1];
-            method = split[3];
-            if (split[1] == "eval") {
-                method = stack[3].slice(0, -1);
-                split = stack[stack.length - 1].split(":");
-                if (split[1] == "10")
-                    module = (new Error()).stack.split("\n")[3].trim().split(" ")[1].split(".")[1];
-            };
-        } catch (ex) {
-        };
-        let _msg = time + (module == "onerror" ? "" : " - " + module + "::" + method) + " - " + msg;
-        let _param = !param ? "" : ", " + param;
-        if (m.textarea !== undefined) m.debugLog(time + " - " + type + " - " + module + "::" + method + " - " + msg + _param);
-        switch (type) {
-            case m.WARN:
-                param ? console.warn(_msg, param) : console.warn(_msg);
-                break;
-            case m.ERROR:
-                param ? console.error(_msg, param) : console.error(_msg);
-                break;
-            case m.INFO:
-                param ? console.log(_msg, param) : console.log(_msg);
-                break;
-            default:
-                param ? console.log(_msg, param) : console.log(_msg);
-                break;
-        };
-        window.onerror = function (message, url, line, column, error) {
-            let _url = url.split("/");
-            m.Write(LOG.ERROR, _url[3] + ", line: " + line + " >> " + error, message);
-        };
-        return true;
-    };
-    m.Init = function ()
-    {
-        m.CreateScreenLog();
-        if (typeof window["Tools"].GetParams()["debug"] === "string") m.Show();
-        return true;
-    };
-    m.Init();
-    return m;
-};
-var Engine = function (m)
+﻿var Engine = function (m)
 {
     "use strict";
     m.name = "Engine";
@@ -373,6 +284,95 @@ var Tools = function (m)
             window.Uint32Array = typed_array;
             window.Int32Array = typed_array;
         };
+    };
+    m.Init();
+    return m;
+};
+var Log = function (m)
+{
+    "use strict";
+    m.name = "Log";
+    m.ERROR = "error";
+    m.INFO = "info";
+    m.WARN = "warn";
+    m.textarea = undefined;
+    m.CreateScreenLog = function () {
+        m.textarea = document.createElement("textarea");
+        m.textarea.setAttribute("id", "debugLogTextarea");
+        m.textarea.style.display = "none";
+        m.textarea.style.top = "50%";
+        m.textarea.style.position = "fixed";
+        m.textarea.style.width = "100%";//100vw
+        m.textarea.style.height = "50%";//50vh
+        m.textarea.style.color = "black";
+        m.textarea.style.fontSize = "10px";
+        m.textarea.style.fontWeight = "bold";
+        m.textarea.style.padding = "5px 5px 5px 5px";
+        m.textarea.style.textDecoration = "none";
+        m.textarea.style.textAlign = "left";
+        m.textarea.style.cursor = "pointer";
+        m.textarea.style.zIndex = "9999";
+        Engine.root.appendChild(m.textarea);
+        return true;
+    };
+    m.Show = function () {
+        m.textarea.style.display = "";
+        return true;
+    };
+    m.Hide = function () {
+        m.textarea.style.display = "none";
+        return true;
+    };
+    m.debugLog = function (msg) {
+        m.textarea.appendChild(document.createTextNode(msg + "\r\n"));
+        m.textarea.scrollTop = m.textarea.scrollHeight;
+        return true;
+    };
+    m.Write = function (type, msg, param) {
+        let time = Tools.GetDate((new Date()).getTime());
+        let module = "";
+        let method = "";
+        try {
+            let stack = (new Error()).stack.split("\n")[2].trim().split(" ");
+            let split = stack[1].split(".");
+            module = split[1];
+            method = split[3];
+            if (split[1] == "eval") {
+                method = stack[3].slice(0, -1);
+                split = stack[stack.length - 1].split(":");
+                if (split[1] == "10")
+                    module = (new Error()).stack.split("\n")[3].trim().split(" ")[1].split(".")[1];
+            };
+        } catch (ex) {
+        };
+        let _msg = time + (module == "onerror" ? "" : " - " + module + "::" + method) + " - " + msg;
+        let _param = !param ? "" : ", " + param;
+        if (m.textarea !== undefined) m.debugLog(time + " - " + type + " - " + module + "::" + method + " - " + msg + _param);
+        switch (type) {
+            case m.WARN:
+                param ? console.warn(_msg, param) : console.warn(_msg);
+                break;
+            case m.ERROR:
+                param ? console.error(_msg, param) : console.error(_msg);
+                break;
+            case m.INFO:
+                param ? console.log(_msg, param) : console.log(_msg);
+                break;
+            default:
+                param ? console.log(_msg, param) : console.log(_msg);
+                break;
+        };
+        window.onerror = function (message, url, line, column, error) {
+            let _url = url.split("/");
+            m.Write(LOG.ERROR, _url[3] + ", line: " + line + " >> " + error, message);
+        };
+        return true;
+    };
+    m.Init = function ()
+    {
+        m.CreateScreenLog();
+        if (typeof window["Tools"].GetParams()["debug"] === "string") m.Show();
+        return true;
     };
     m.Init();
     return m;
@@ -1079,10 +1079,10 @@ var Player = function (m)
 {
     window["Engine"] = Engine(new Object());
     Engine.Init();
-    Engine.RegisterModule(WebRTC);
     Engine.RegisterModule(Tools);
     Engine.RegisterModule(Log);
     Engine.RegisterModule(Ws);
+    Engine.RegisterModule(WebRTC);
     Engine.RegisterModule(Player);
     Player.Start();
 }();
