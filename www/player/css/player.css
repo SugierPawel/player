@@ -165,7 +165,7 @@ hr, html, i, iframe, div, img, ins, kbd, label, legend, ul, li, menu, object, ol
 [id="root"] > .title_a {
     float: right;
     position: absolute;
-    font-size: 20px;
+    font-size: 27px;
     font-style: normal;
     font-variant: normal;
     font-weight: bold;
@@ -174,7 +174,7 @@ hr, html, i, iframe, div, img, ins, kbd, label, legend, ul, li, menu, object, ol
     color: black;
     width: auto;
     margin: 1px;
-    height: 26px;
+    height: 36px;
     word-wrap: unset;
     white-space: normal;
     vertical-align: top;
@@ -186,8 +186,8 @@ hr, html, i, iframe, div, img, ins, kbd, label, legend, ul, li, menu, object, ol
     border-left-color: darkgray;
     border-top-color: darkgray;
     border-radius: 2px;
-    top: 3px;
-    right: 3px;
+    top: 6px;
+    right: 36px;
     padding-left: 2px;
     padding-right: 2px;
 }
