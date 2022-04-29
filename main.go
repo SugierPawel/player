@@ -32,6 +32,7 @@ const (
 )
 
 var wssHub *wss.Hub
+var sourceMutex sync.Mutex
 var ListenUDPMap map[string]*listenerConfig
 var TracksMap map[string]*TracksConfig
 var SourceToWebrtcMap map[string]*SourceToWebrtcConfig
@@ -41,8 +42,8 @@ var codec = Codecs{
 	AudioMimeType:      webrtc.MimeTypeOpus,
 	VideoSampleRate:    90000,
 	AudioSampleRate:    48000,
-	VideoPacketMaxLate: 500,
-	AudioPacketMaxLate: 10,
+	VideoPacketMaxLate: 5,
+	AudioPacketMaxLate: 1,
 }
 
 type listenerConfig struct {
@@ -126,12 +127,10 @@ func check(FunctionName string, sn string, err error) {
 	}
 }
 
-var mu sync.Mutex
-
 func AddRTPsource(sc *core.StreamConfig) {
 	log.Printf("AddRTPsource: %+v\n", sc)
 	sn := sc.StreamName
-	mu.Lock()
+	sourceMutex.Lock()
 	TracksMap[sn] = new(TracksConfig)
 	TracksMap[sn].Direction = make(map[string]*TracksDirectionConfig)
 	ListenUDPMap[sn] = new(listenerConfig)
@@ -161,7 +160,7 @@ func AddRTPsource(sc *core.StreamConfig) {
 		Data:    base64.URLEncoding.EncodeToString([]byte(jsonStr)),
 	})
 	wssHub.Broadcast <- data
-	mu.Unlock()
+	sourceMutex.Unlock()
 }
 func DelRTPsource(sc *core.StreamConfig) {
 	log.Printf("DelRTPsource: %+v\n", sc)
