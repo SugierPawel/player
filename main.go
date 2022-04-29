@@ -130,7 +130,9 @@ func check(FunctionName string, sn string, err error) {
 func AddRTPsource(sc *core.StreamConfig) {
 	log.Printf("AddRTPsource: %+v\n", sc)
 	sn := sc.StreamName
+
 	sourceMutex.Lock()
+
 	TracksMap[sn] = new(TracksConfig)
 	TracksMap[sn].Direction = make(map[string]*TracksDirectionConfig)
 	ListenUDPMap[sn] = new(listenerConfig)
@@ -192,16 +194,28 @@ func initLocalTracks(sc *core.StreamConfig, direction string) {
 
 	//TracksMap[sn].Direction[direction].syncMap["video"] = make(chan *media.Sample)
 	TracksMap[sn].Direction[direction].depacketizer["video"] = &codecs.H264Packet{}
-	TracksMap[sn].Direction[direction].sampleBuffer["video"] = samplebuilder.New(uint16(codec.VideoPacketMaxLate), TracksMap[sn].Direction[direction].depacketizer["video"], uint32(codec.VideoSampleRate))
-	TracksMap[sn].Direction[direction].kind["video"], err = webrtc.NewTrackLocalStaticSample(webrtc.RTPCodecCapability{MimeType: codec.VideoMimeType}, "video", sc.ChannelName)
+	TracksMap[sn].Direction[direction].sampleBuffer["video"] = samplebuilder.New(
+		uint16(codec.VideoPacketMaxLate),
+		TracksMap[sn].Direction[direction].depacketizer["video"],
+		uint32(codec.VideoSampleRate))
+	TracksMap[sn].Direction[direction].kind["video"], err = webrtc.NewTrackLocalStaticSample(
+		webrtc.RTPCodecCapability{MimeType: codec.VideoMimeType},
+		"video",
+		sc.ChannelName)
 	if err != nil {
 		log.Printf("initLocalTracks, sn: %s, kind: %s, direction: %s, error: %s", sn, "video", direction, err)
 	}
 
 	//TracksMap[sn].Direction[direction].syncMap["audio"] = make(chan *media.Sample)
 	TracksMap[sn].Direction[direction].depacketizer["audio"] = &codecs.OpusPacket{}
-	TracksMap[sn].Direction[direction].sampleBuffer["audio"] = samplebuilder.New(uint16(codec.AudioPacketMaxLate), TracksMap[sn].Direction[direction].depacketizer["audio"], uint32(codec.AudioSampleRate))
-	TracksMap[sn].Direction[direction].kind["audio"], err = webrtc.NewTrackLocalStaticSample(webrtc.RTPCodecCapability{MimeType: codec.AudioMimeType}, "audio", sc.ChannelName)
+	TracksMap[sn].Direction[direction].sampleBuffer["audio"] = samplebuilder.New(
+		uint16(codec.AudioPacketMaxLate),
+		TracksMap[sn].Direction[direction].depacketizer["audio"],
+		uint32(codec.AudioSampleRate))
+	TracksMap[sn].Direction[direction].kind["audio"], err = webrtc.NewTrackLocalStaticSample(
+		webrtc.RTPCodecCapability{MimeType: codec.AudioMimeType},
+		"audio",
+		sc.ChannelName)
 	if err != nil {
 		log.Printf("initLocalTracks, sn: %s, kind: %s, direction: %s, error: %s", sn, "audio", direction, err)
 	}
@@ -433,8 +447,6 @@ func localRTPanswerer(sn string, offerSDP <-chan string, answerSDP chan<- string
 
 	err = SourceToWebrtcMap[sn].answerPeerConnection.SetLocalDescription(answer)
 	check(fName, sn, err)
-
-	//log.Printf(">>>>> ANSWER: \n%s\n", answer.SDP)
 
 	answerSDP <- answer.SDP
 
