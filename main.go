@@ -564,9 +564,12 @@ func changeChannel(client *wss.Client, channel string) {
 			go func() {
 				rtcpBuf := make([]byte, 1500)
 				for {
-					if _, _, rtcpErr := sender.Read(rtcpBuf); rtcpErr != nil {
+					n, a, rtcpErr := sender.Read(rtcpBuf)
+					if rtcpErr != nil {
+						log.Printf(">>>>>>>>> n: %d, a: %v, rtcpErr: %s", n, a, rtcpErr)
 						continue
 					}
+					log.Printf(">>>>>>>>> n: %d, a: %v", n, a)
 				}
 			}()
 		}
