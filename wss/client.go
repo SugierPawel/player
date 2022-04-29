@@ -29,14 +29,14 @@ var upgrader = websocket.Upgrader{
 }
 
 type Client struct {
-	hub  *Hub
+	Hub  *Hub
 	Conn *websocket.Conn
 	Send chan []byte
 }
 
 func (c *Client) readPump() {
 	defer func() {
-		c.hub.unregister <- c
+		c.Hub.unregister <- c
 		c.Conn.Close()
 	}()
 	c.Conn.SetReadLimit(maxMessageSize)
@@ -55,7 +55,7 @@ func (c *Client) readPump() {
 		cm.Message = message
 		//cm.Message = bytes.TrimSpace(bytes.Replace(message, newline, space, -1))
 
-		c.hub.Receiver <- cm
+		c.Hub.Receiver <- cm
 	}
 }
 
@@ -104,8 +104,8 @@ func WebSocketAccept(hub *Hub, w http.ResponseWriter, r *http.Request) {
 		log.Println(err)
 		return
 	}
-	client := &Client{hub: hub, Conn: Conn, Send: make(chan []byte, 256)}
-	client.hub.register <- client
+	client := &Client{Hub: hub, Conn: Conn, Send: make(chan []byte, 256)}
+	client.Hub.register <- client
 
 	go client.writePump()
 	go client.readPump()

@@ -13,6 +13,7 @@ type Hub struct {
 	Receiver           chan *ClientMessage
 	RegisterReceiver   chan *ClientMessage
 	UnregisterReceiver chan *ClientMessage
+	Kill               chan *Client
 }
 
 func NewHub() *Hub {
@@ -40,9 +41,10 @@ func (h *Hub) Run() {
 				cm := new(ClientMessage)
 				cm.Client = client
 				h.UnregisterReceiver <- cm
-				delete(h.clients, client)
-				close(client.Send)
 			}
+		case client := <-h.Kill:
+			delete(h.clients, client)
+			close(client.Send)
 		case message := <-h.Broadcast:
 			for client := range h.clients {
 				select {
