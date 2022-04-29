@@ -41,8 +41,8 @@ var codec = Codecs{
 	AudioMimeType:      webrtc.MimeTypeOpus,
 	VideoSampleRate:    90000,
 	AudioSampleRate:    48000,
-	VideoPacketMaxLate: 100,
-	AudioPacketMaxLate: 100,
+	VideoPacketMaxLate: 500,
+	AudioPacketMaxLate: 10,
 }
 
 type listenerConfig struct {
