@@ -48,7 +48,6 @@ var codec = Codecs{
 type listenerConfig struct {
 	CloseChan chan bool
 	kind      map[string]*net.UDPConn
-	mutex     sync.Mutex
 }
 type iceConfig struct {
 	client *wss.Client
