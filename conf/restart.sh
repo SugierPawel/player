@@ -18,3 +18,5 @@ service polsat_webrtc_3 start
 
 service coturn start
 service polsat_player start
+
+tail -f /var/log/polsat_player.log
