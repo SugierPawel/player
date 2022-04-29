@@ -48,6 +48,7 @@ var codec = Codecs{
 type listenerConfig struct {
 	CloseChan chan bool
 	kind      map[string]*net.UDPConn
+	mutex     sync.Mutex
 }
 type iceConfig struct {
 	client *wss.Client
@@ -126,10 +127,12 @@ func check(FunctionName string, sn string, err error) {
 	}
 }
 
+var mu sync.Mutex
+
 func AddRTPsource(sc *core.StreamConfig) {
 	log.Printf("AddRTPsource: %+v\n", sc)
 	sn := sc.StreamName
-
+	mu.Lock()
 	TracksMap[sn] = new(TracksConfig)
 	TracksMap[sn].Direction = make(map[string]*TracksDirectionConfig)
 	ListenUDPMap[sn] = new(listenerConfig)
@@ -159,6 +162,7 @@ func AddRTPsource(sc *core.StreamConfig) {
 		Data:    base64.URLEncoding.EncodeToString([]byte(jsonStr)),
 	})
 	wssHub.Broadcast <- data
+	mu.Unlock()
 }
 func DelRTPsource(sc *core.StreamConfig) {
 	log.Printf("DelRTPsource: %+v\n", sc)
