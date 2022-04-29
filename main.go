@@ -200,7 +200,7 @@ func initLocalTracks(sc *core.StreamConfig, direction string) {
 		uint32(codec.VideoSampleRate))
 	TracksMap[sn].Direction[direction].kind["video"], err = webrtc.NewTrackLocalStaticSample(
 		webrtc.RTPCodecCapability{MimeType: codec.VideoMimeType},
-		"video",
+		"av",
 		sc.ChannelName)
 	if err != nil {
 		log.Printf("initLocalTracks, sn: %s, kind: %s, direction: %s, error: %s", sn, "video", direction, err)
@@ -214,7 +214,7 @@ func initLocalTracks(sc *core.StreamConfig, direction string) {
 		uint32(codec.AudioSampleRate))
 	TracksMap[sn].Direction[direction].kind["audio"], err = webrtc.NewTrackLocalStaticSample(
 		webrtc.RTPCodecCapability{MimeType: codec.AudioMimeType},
-		"audio",
+		"av",
 		sc.ChannelName)
 	if err != nil {
 		log.Printf("initLocalTracks, sn: %s, kind: %s, direction: %s, error: %s", sn, "audio", direction, err)
