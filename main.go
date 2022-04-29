@@ -558,10 +558,22 @@ func changeChannel(client *wss.Client, channel string) {
 		}
 	} else if SourceToWebrtcMap[sn].actualChannel == "" {
 		log.Printf(" << ASIGN CHANNEL << klient: %s, kanał: %s", sn, channel)
-		_, err = SourceToWebrtcMap[sn].peerConnection.AddTrack(TracksMap[channel].Direction["Broadcast"].kind["audio"])
-		check(fName, sn, err)
-		_, err = SourceToWebrtcMap[sn].peerConnection.AddTrack(TracksMap[channel].Direction["Broadcast"].kind["video"])
-		check(fName, sn, err)
+		for _, track := range TracksMap[channel].Direction["Broadcast"].kind {
+			sender, err := SourceToWebrtcMap[sn].peerConnection.AddTrack(track)
+			check(fName, sn, err)
+			go func() {
+				rtcpBuf := make([]byte, 1500)
+				for {
+					if _, _, rtcpErr := sender.Read(rtcpBuf); rtcpErr != nil {
+						continue
+					}
+				}
+			}()
+		}
+		//_, err = SourceToWebrtcMap[sn].peerConnection.AddTrack(TracksMap[channel].Direction["Broadcast"].kind["audio"])
+		//check(fName, sn, err)
+		//_, err = SourceToWebrtcMap[sn].peerConnection.AddTrack(TracksMap[channel].Direction["Broadcast"].kind["video"])
+		//check(fName, sn, err)
 	}
 	SourceToWebrtcMap[sn].actualChannel = channel
 }
