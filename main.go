@@ -27,8 +27,8 @@ import (
 
 const (
 	sleepTime             = time.Millisecond * 100
-	defaultChannel string = "127.0.0.1:1111" //"172.26.9.100:1111"
-	webSocketAddr         = "127.0.0.1:2000" //"172.26.9.100:2000"
+	defaultChannel string = "172.26.9.100:1111" //"172.26.9.100:1111" "127.0.0.1:1111"
+	webSocketAddr         = "172.26.9.100:2000" //"172.26.9.100:2000" "127.0.0.1:2000"
 )
 
 var wssHub *wss.Hub
