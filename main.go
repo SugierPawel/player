@@ -274,9 +274,6 @@ func initListenUDP(sc *core.StreamConfig, kind string) {
 				log.Printf("initListenUDP, kind: %s, sn: %s, rtpPacket.Unmarshal error: %s", kind, sn, err)
 				break
 			}
-			if kind == "video" {
-				rtpPacket.Timestamp += 40000
-			}
 			TracksMap[sn].Direction[broadcast].sampleBuffer[kind].Push(rtpPacket)
 			for {
 				sample := TracksMap[sn].Direction[broadcast].sampleBuffer[kind].Pop()
