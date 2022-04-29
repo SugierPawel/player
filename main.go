@@ -42,7 +42,7 @@ var codec = Codecs{
 	AudioMimeType:      webrtc.MimeTypeOpus,
 	VideoSampleRate:    90000,
 	AudioSampleRate:    48000,
-	VideoPacketMaxLate: 300,
+	VideoPacketMaxLate: 1,
 	AudioPacketMaxLate: 1,
 }
 
@@ -559,9 +559,9 @@ func changeChannel(client *wss.Client, channel string) {
 	} else if SourceToWebrtcMap[sn].actualChannel == "" {
 		log.Printf(" << ASIGN CHANNEL << klient: %s, kanał: %s", sn, channel)
 		for _, track := range TracksMap[channel].Direction["Broadcast"].kind {
-			sender, err := SourceToWebrtcMap[sn].peerConnection.AddTrack(track)
+			_, err := SourceToWebrtcMap[sn].peerConnection.AddTrack(track)
 			check(fName, sn, err)
-			go func() {
+			/*go func() {
 				rtcpBuf := make([]byte, 1500)
 				for {
 					n, a, rtcpErr := sender.Read(rtcpBuf)
@@ -571,7 +571,7 @@ func changeChannel(client *wss.Client, channel string) {
 					}
 					log.Printf(">>>>>>>>> n: %d, a: %v", n, a)
 				}
-			}()
+			}()*/
 		}
 		//_, err = SourceToWebrtcMap[sn].peerConnection.AddTrack(TracksMap[channel].Direction["Broadcast"].kind["audio"])
 		//check(fName, sn, err)
