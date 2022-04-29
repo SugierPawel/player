@@ -275,7 +275,7 @@ func initListenUDP(sc *core.StreamConfig, kind string) {
 				break
 			}
 			if kind == "audio" {
-				rtpPacket.Timestamp += 2000
+				rtpPacket.Timestamp -= 2000
 			}
 			TracksMap[sn].Direction[broadcast].sampleBuffer[kind].Push(rtpPacket)
 			for {
