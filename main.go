@@ -89,6 +89,7 @@ type Codecs struct {
 	MimeType      string
 	SampleRate    int
 	PacketMaxLate int
+	dep           rtp.Depacketizer
 }
 
 var receiverWebrtcConfiguration = webrtc.Configuration{
@@ -182,12 +183,7 @@ func initLocalTracks(sc *core.StreamConfig, direction string) {
 
 	for kind := range codecMap {
 		//TracksMap[sn].Direction[direction].syncMap[kind] = make(chan *media.Sample)
-		switch kind {
-		case "video":
-			TracksMap[sn].Direction[direction].depacketizer[kind] = &codecs.H264Packet{}
-		case "audio":
-			TracksMap[sn].Direction[direction].depacketizer[kind] = &codecs.OpusPacket{}
-		}
+		TracksMap[sn].Direction[direction].depacketizer[kind] = codecMap[kind].dep
 		TracksMap[sn].Direction[direction].sampleBuffer[kind] = samplebuilder.New(
 			uint16(codecMap[kind].PacketMaxLate),
 			TracksMap[sn].Direction[direction].depacketizer[kind],
@@ -720,11 +716,13 @@ func main() {
 		MimeType:      webrtc.MimeTypeH264,
 		SampleRate:    90000,
 		PacketMaxLate: 500,
+		dep:           &codecs.H264Packet{},
 	}
 	codecMap["audio"] = Codecs{
 		MimeType:      webrtc.MimeTypeOpus,
 		SampleRate:    48000,
 		PacketMaxLate: 500,
+		dep:           &codecs.OpusPacket{},
 	}
 
 	go ini.ReadIniConfig()
