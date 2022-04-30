@@ -252,7 +252,7 @@ func initListenUDP(sc *core.StreamConfig) {
 			case 97:
 				kind = "audio"
 			}
-			log.Printf("initListenUDP <<<< kind: %s, n: %d, pt: %d", kind, n, rtpPacket.Header.PayloadType)
+			//log.Printf("initListenUDP <<<< kind: %s, n: %d, pt: %d", kind, n, rtpPacket.Header.PayloadType)
 			TracksMap[sn].Direction[broadcast].sampleBuffer[kind].Push(rtpPacket)
 			for {
 				sample := TracksMap[sn].Direction[broadcast].sampleBuffer[kind].Pop()
