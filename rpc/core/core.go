@@ -25,22 +25,9 @@ type StreamConfig struct {
 	StreamName  string
 	Request     string
 	IPIn        string
-	VideoPortIn int
-	AudioPortIn int
+	PortIn      int
 	ChannelName string
 }
-
-/*
-[192.168.67.210:1111]
-Request = AddRTP
-IPIn    = 192.168.67.210
-AudioPortIn  = 1111
-VideoPortIn  = 1112
-IPOut   = 224.11.11.1
-PortOutAudio = 1113
-PortOutVideo = 1114
-ChannelName    = W24
-*/
 
 const HandlerName = "Handler.Execute"
 
@@ -51,7 +38,7 @@ type Handler struct {
 var StreamConfigChan = make(chan *StreamConfig, 1)
 
 func (h *Handler) Execute(sc *StreamConfig, res *CMDResponse) (err error) {
-	sc.StreamName = sc.IPIn + ":" + strconv.Itoa(sc.VideoPortIn)
+	sc.StreamName = sc.IPIn + ":" + strconv.Itoa(sc.PortIn)
 	StreamConfigChan <- sc
 	if h.Sleep != 0 {
 		time.Sleep(h.Sleep)

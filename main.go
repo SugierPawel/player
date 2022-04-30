@@ -203,7 +203,7 @@ func initListenUDP(sc *core.StreamConfig) {
 	var broadcast string = "Broadcast"
 
 	IPIn := ini.SCMap[sn].IPIn
-	var port = ini.SCMap[sn].VideoPortIn
+	var port = ini.SCMap[sn].PortIn
 
 	//ListenUDPMap[sn].CloseChan = make(chan bool, 1)
 	defer func() {
@@ -257,11 +257,11 @@ func initListenUDP(sc *core.StreamConfig) {
 			for {
 				sample := TracksMap[sn].Direction[broadcast].sampleBuffer[kind].Pop()
 				if sample == nil {
-					log.Printf("initListenUDP << nie gotowy...., kind: %s", kind)
+					//log.Printf("initListenUDP << nie gotowy...., kind: %s", kind)
 					break
 				}
 				//TracksMap[sn].Direction[broadcast].syncMap[oppositeKind] <- sample
-				log.Printf("initListenUDP >> WriteSample!!!, kind: %s, ts: %d, dropped: %d", kind, sample.PacketTimestamp, sample.PrevDroppedPackets)
+				//log.Printf("initListenUDP >> WriteSample!!!, kind: %s, ts: %d, dropped: %d", kind, sample.PacketTimestamp, sample.PrevDroppedPackets)
 				if err := TracksMap[sn].Direction[broadcast].kind[kind].WriteSample(*sample); err != nil {
 					log.Printf("initListenUDP, kind: %s, sn: %s, WriteSample error: %s", kind, sn, err)
 				}

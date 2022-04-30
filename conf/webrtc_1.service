@@ -5,7 +5,7 @@ Wants=NetworkManager-wait-online.service network-online.target
 Requires=dbus.service
 
 [Service]
-ExecStart=/home/scripts/./webrtc.sh /home/scripts/./webrtc_1 224.10.11.120:1111 172.26.9.100 1111 1113
+ExecStart=/home/scripts/./webrtc.sh /home/scripts/./webrtc_1 224.10.11.120:1111 172.26.9.100 1111
 User=root
 Restart=always
 Type=simple
