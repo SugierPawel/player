@@ -5,16 +5,16 @@ address_in=$2
 address_out=$3
 port=$4
 
-rtcpport=$(($port + 1))
-video_localrtcpport=$(($audio_port + 2))
-audio_localrtcpport=$(($audio_port + 3))
+rtcpport=$(($port))
+video_localrtcpport=$(($port + 1))
+audio_localrtcpport=$(($port + 2))
 
-ttl=10
+ttl=1
 buffer_size=4194304
 
 in="udp://@"$address_in"?pkt_size=1316&buffer_size=$buffer_size" \
-video_out="rtp://"$address_out":"$port"?ttl="$ttl"&rtcpport="$rtcpport"&localrtcpport="$video_localrtcpport"&pkt_size=1200&buffer_size="$buffer_size"&&fifo_size="$buffer_size"&overrun_nonfatal=1" \
-audio_out="rtp://"$address_out":"$port"?ttl="$ttl"&rtcpport="$rtcpport"&localrtcpport="$audio_localrtcpport"&pkt_size=1200"
+video_out="rtp://"$address_out":"$port"?ttl="$ttl"&rtcpport="$rtcpport"&localrtcpport="$video_localrtcpport"&pkt_size=1200" \
+audio_out="rtp://"$address_out":"$port"?ttl="$ttl"&rtcpport="$rtcpport"&localrtcpport="$audio_localrtcpport"&pkt_size=133"
 
 echo ""
 echo "in="$in
@@ -56,7 +56,7 @@ $ffmpeg \
 -i "$in" \
 -map 0 -map -0:s -map -0:a -map -0:d \
 -metadata service_name=$ffmpeg \
--c:v h264_nvenc -preset 12 -tune 1 -profile:v baseline -forced-idr 1 -coder cabac -g 25 -b:v "$bitrate" -cbr 1 -multipass 2 -2pass 1 -rc cbr -bufsize:v "$bufsize" \
+-c:v h264_nvenc -preset 12 -tune 1 -profile:v baseline -forced-idr 1 -coder cabac -b:v "$bitrate" -cbr 1 -multipass 2 -2pass 1 -rc cbr -bufsize:v "$bufsize" \
 -minrate "$minrate" -maxrate "$maxrate" -muxrate  "$muxrate" \
 -f rtp "$video_out" \
 -map 0:a:0 -map -0:s -map -0:v -map -0:d \
