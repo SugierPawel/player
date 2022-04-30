@@ -180,7 +180,7 @@ func initLocalTracks(sc *core.StreamConfig, direction string) {
 	TracksMap[sn].Direction[direction].sampleBuffer = make(map[string]*samplebuilder.SampleBuilder)
 	//TracksMap[sn].Direction[direction].syncMap = make(map[string]chan *media.Sample, 1)
 
-	for kind, _ := range codecMap {
+	for kind := range codecMap {
 		//TracksMap[sn].Direction[direction].syncMap[kind] = make(chan *media.Sample)
 		TracksMap[sn].Direction[direction].depacketizer[kind] = &codecs.H264Packet{}
 		TracksMap[sn].Direction[direction].sampleBuffer[kind] = samplebuilder.New(
