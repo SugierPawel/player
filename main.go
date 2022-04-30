@@ -182,7 +182,12 @@ func initLocalTracks(sc *core.StreamConfig, direction string) {
 
 	for kind := range codecMap {
 		//TracksMap[sn].Direction[direction].syncMap[kind] = make(chan *media.Sample)
-		TracksMap[sn].Direction[direction].depacketizer[kind] = &codecs.H264Packet{}
+		switch kind {
+		case "video":
+			TracksMap[sn].Direction[direction].depacketizer[kind] = &codecs.H264Packet{}
+		case "audio":
+			TracksMap[sn].Direction[direction].depacketizer[kind] = &codecs.OpusPacket{}
+		}
 		TracksMap[sn].Direction[direction].sampleBuffer[kind] = samplebuilder.New(
 			uint16(codecMap[kind].PacketMaxLate),
 			TracksMap[sn].Direction[direction].depacketizer[kind],
