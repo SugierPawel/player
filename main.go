@@ -37,18 +37,11 @@ var ListenUDPMap map[string]*listenerConfig
 var TracksMap map[string]*TracksConfig
 var SourceToWebrtcMap map[string]*SourceToWebrtcConfig
 var remoteP2PQueueMap map[string]*remoteP2PQueueConfig
-var codec = Codecs{
-	VideoMimeType:      webrtc.MimeTypeH264,
-	AudioMimeType:      webrtc.MimeTypeOpus,
-	VideoSampleRate:    90000,
-	AudioSampleRate:    48000,
-	VideoPacketMaxLate: 500,
-	AudioPacketMaxLate: 1,
-}
+var codecMap map[string]Codecs
 
 type listenerConfig struct {
 	CloseChan chan bool
-	kind      map[string]*net.UDPConn
+	Conn      *net.UDPConn
 }
 type iceConfig struct {
 	client *wss.Client
@@ -93,12 +86,9 @@ type TracksConfig struct {
 	Direction map[string]*TracksDirectionConfig
 }
 type Codecs struct {
-	VideoMimeType      string
-	VideoSampleRate    int
-	VideoPacketMaxLate int
-	AudioMimeType      string
-	AudioSampleRate    int
-	AudioPacketMaxLate int
+	MimeType      string
+	SampleRate    int
+	PacketMaxLate int
 }
 
 var receiverWebrtcConfiguration = webrtc.Configuration{
@@ -136,7 +126,6 @@ func AddRTPsource(sc *core.StreamConfig) {
 	TracksMap[sn] = new(TracksConfig)
 	TracksMap[sn].Direction = make(map[string]*TracksDirectionConfig)
 	ListenUDPMap[sn] = new(listenerConfig)
-	ListenUDPMap[sn].kind = make(map[string]*net.UDPConn)
 	SourceToWebrtcMap[sn] = new(SourceToWebrtcConfig)
 	SourceToWebrtcMap[sn].offererExitChan = make(chan bool)
 	SourceToWebrtcMap[sn].answererExitChan = make(chan bool)
@@ -144,8 +133,7 @@ func AddRTPsource(sc *core.StreamConfig) {
 	initLocalTracks(sc, "RTP")
 	initLocalTracks(sc, "Broadcast")
 
-	go initListenUDP(sc, "audio")
-	go initListenUDP(sc, "video")
+	go initListenUDP(sc)
 
 	sdp1 := make(chan string, 1)
 	sdp2 := make(chan string, 1)
@@ -192,47 +180,32 @@ func initLocalTracks(sc *core.StreamConfig, direction string) {
 	TracksMap[sn].Direction[direction].sampleBuffer = make(map[string]*samplebuilder.SampleBuilder)
 	//TracksMap[sn].Direction[direction].syncMap = make(map[string]chan *media.Sample, 1)
 
-	//TracksMap[sn].Direction[direction].syncMap["video"] = make(chan *media.Sample)
-	TracksMap[sn].Direction[direction].depacketizer["video"] = &codecs.H264Packet{}
-	TracksMap[sn].Direction[direction].sampleBuffer["video"] = samplebuilder.New(
-		uint16(codec.VideoPacketMaxLate),
-		TracksMap[sn].Direction[direction].depacketizer["video"],
-		uint32(codec.VideoSampleRate))
-	TracksMap[sn].Direction[direction].kind["video"], err = webrtc.NewTrackLocalStaticSample(
-		webrtc.RTPCodecCapability{MimeType: codec.VideoMimeType},
-		"av",
-		sc.ChannelName)
-	if err != nil {
-		log.Printf("initLocalTracks, sn: %s, kind: %s, direction: %s, error: %s", sn, "video", direction, err)
-	}
+	TracksMap[sn].Direction[direction].kind["video"] = &webrtc.TrackLocalStaticSample{}
+	TracksMap[sn].Direction[direction].kind["audio"] = &webrtc.TrackLocalStaticSample{}
 
-	//TracksMap[sn].Direction[direction].syncMap["audio"] = make(chan *media.Sample)
-	TracksMap[sn].Direction[direction].depacketizer["audio"] = &codecs.OpusPacket{}
-	TracksMap[sn].Direction[direction].sampleBuffer["audio"] = samplebuilder.New(
-		uint16(codec.AudioPacketMaxLate),
-		TracksMap[sn].Direction[direction].depacketizer["audio"],
-		uint32(codec.AudioSampleRate))
-	TracksMap[sn].Direction[direction].kind["audio"], err = webrtc.NewTrackLocalStaticSample(
-		webrtc.RTPCodecCapability{MimeType: codec.AudioMimeType},
-		"av",
-		sc.ChannelName)
-	if err != nil {
-		log.Printf("initLocalTracks, sn: %s, kind: %s, direction: %s, error: %s", sn, "audio", direction, err)
+	for kind, _ := range codecMap {
+		//TracksMap[sn].Direction[direction].syncMap[kind] = make(chan *media.Sample)
+		TracksMap[sn].Direction[direction].depacketizer[kind] = &codecs.H264Packet{}
+		TracksMap[sn].Direction[direction].sampleBuffer[kind] = samplebuilder.New(
+			uint16(codecMap[kind].PacketMaxLate),
+			TracksMap[sn].Direction[direction].depacketizer[kind],
+			uint32(codecMap[kind].SampleRate))
+		TracksMap[sn].Direction[direction].kind[kind], err = webrtc.NewTrackLocalStaticSample(
+			webrtc.RTPCodecCapability{MimeType: codecMap[kind].MimeType},
+			"av_"+sc.ChannelName,
+			sc.ChannelName)
+		if err != nil {
+			log.Printf("initLocalTracks, sn: %s, kind: %s, direction: %s, error: %s", sn, kind, direction, err)
+		}
 	}
 }
-func initListenUDP(sc *core.StreamConfig, kind string) {
+func initListenUDP(sc *core.StreamConfig) {
 	sn := sc.StreamName
 	var err error
 	var broadcast string = "Broadcast"
 
 	IPIn := ini.SCMap[sn].IPIn
 	var port = ini.SCMap[sn].VideoPortIn
-	//var oppositeKind string = "audio"
-	if kind == "audio" {
-		port = ini.SCMap[sn].AudioPortIn
-		//oppositeKind = "video"
-	}
-	log.Printf("initListenUDP, sn: %s, kind: %s, IPIn: %s, port: %d", sn, kind, IPIn, port)
 
 	//ListenUDPMap[sn].CloseChan = make(chan bool, 1)
 	defer func() {
@@ -248,31 +221,38 @@ func initListenUDP(sc *core.StreamConfig, kind string) {
 			SourceToWebrtcMap[sn].answererExitChan <- true
 		}
 	}()
-	ListenUDPMap[sn].kind[kind], err = net.ListenUDP("udp", &net.UDPAddr{IP: net.ParseIP(IPIn), Port: port})
+
+	ListenUDPMap[sn].Conn, err = net.ListenUDP("udp", &net.UDPAddr{IP: net.ParseIP(IPIn), Port: port})
 	if err != nil {
-		log.Printf("initListenUDP, sn: %s, kind: %s, IPIn: %s, port: %d, err: %s", sn, kind, IPIn, port, err)
+		log.Printf("initListenUDP, sn: %s, IPIn: %s, port: %d, err: %s", sn, IPIn, port, err)
 		return
 	}
+	var kind string
 	for {
 		select {
 		//case neighborSample := <-TracksMap[sn].Direction[broadcast].syncMap[kind]:
 		//	log.Printf("initListenUDP <- syncChan, neighbor kind: %s, PacketTimestamp: %d, PrevDroppedPackets: %d", kind, neighborSample.PacketTimestamp, neighborSample.PrevDroppedPackets)
 		case <-ListenUDPMap[sn].CloseChan:
-			ListenUDPMap[sn].kind[kind].Close()
-			delete(ListenUDPMap[sn].kind, kind)
+			ListenUDPMap[sn].Conn.Close()
 			delete(ListenUDPMap, sn)
 			return
 		default:
 			packet := make([]byte, 1200)
 			rtpPacket := &rtp.Packet{}
-			n, _, err := ListenUDPMap[sn].kind[kind].ReadFrom(packet)
+			n, _, err := ListenUDPMap[sn].Conn.ReadFrom(packet)
 			if err != nil {
-				log.Printf("initListenUDP, kind: %s, sn: %s, ReadFrom error: %s", kind, sn, err)
+				log.Printf("initListenUDP, sn: %s, ReadFrom error: %s", sn, err)
 				break
 			}
 			if err = rtpPacket.Unmarshal(packet[:n]); err != nil {
-				log.Printf("initListenUDP, kind: %s, sn: %s, rtpPacket.Unmarshal error: %s", kind, sn, err)
+				log.Printf("initListenUDP, sn: %s, rtpPacket.Unmarshal error: %s", sn, err)
 				break
+			}
+			switch rtpPacket.Header.PayloadType {
+			case 96:
+				kind = "video"
+			case 97:
+				kind = "audio"
 			}
 			TracksMap[sn].Direction[broadcast].sampleBuffer[kind].Push(rtpPacket)
 			for {
@@ -300,13 +280,13 @@ func localRTPofferer(sn string, offerSDP chan<- string, answerSDP <-chan string,
 	SourceToWebrtcMap[sn].interceptor = &interceptor.Registry{}
 
 	if err := SourceToWebrtcMap[sn].mediaEngine.RegisterCodec(webrtc.RTPCodecParameters{
-		RTPCodecCapability: webrtc.RTPCodecCapability{MimeType: codec.VideoMimeType, ClockRate: uint32(codec.VideoSampleRate), Channels: 0, SDPFmtpLine: "", RTCPFeedback: nil},
+		RTPCodecCapability: webrtc.RTPCodecCapability{MimeType: codecMap["video"].MimeType, ClockRate: uint32(codecMap["video"].SampleRate), Channels: 0, SDPFmtpLine: "", RTCPFeedback: nil},
 		PayloadType:        96,
 	}, webrtc.RTPCodecTypeVideo); err != nil {
 		panic(err)
 	}
 	if err := SourceToWebrtcMap[sn].mediaEngine.RegisterCodec(webrtc.RTPCodecParameters{
-		RTPCodecCapability: webrtc.RTPCodecCapability{MimeType: codec.AudioMimeType, ClockRate: uint32(codec.AudioSampleRate), Channels: 0, SDPFmtpLine: "", RTCPFeedback: nil},
+		RTPCodecCapability: webrtc.RTPCodecCapability{MimeType: codecMap["audio"].MimeType, ClockRate: uint32(codecMap["audio"].SampleRate), Channels: 0, SDPFmtpLine: "", RTCPFeedback: nil},
 		PayloadType:        97,
 	}, webrtc.RTPCodecTypeAudio); err != nil {
 		panic(err)
@@ -597,12 +577,12 @@ func registerReceiver(client *wss.Client) {
 	SourceToWebrtcMap[sn].actualChannel = ""
 
 	if err := SourceToWebrtcMap[sn].mediaEngine.RegisterCodec(webrtc.RTPCodecParameters{
-		RTPCodecCapability: webrtc.RTPCodecCapability{MimeType: codec.VideoMimeType, ClockRate: uint32(codec.VideoSampleRate) /*, Channels: 0, SDPFmtpLine: "", RTCPFeedback: nil*/},
+		RTPCodecCapability: webrtc.RTPCodecCapability{MimeType: codecMap["video"].MimeType, ClockRate: uint32(codecMap["video"].SampleRate) /*, Channels: 0, SDPFmtpLine: "", RTCPFeedback: nil*/},
 	}, webrtc.RTPCodecTypeVideo); err != nil {
 		panic(err)
 	}
 	if err := SourceToWebrtcMap[sn].mediaEngine.RegisterCodec(webrtc.RTPCodecParameters{
-		RTPCodecCapability: webrtc.RTPCodecCapability{MimeType: codec.AudioMimeType, ClockRate: uint32(codec.AudioSampleRate) /*, Channels: 0, SDPFmtpLine: "", RTCPFeedback: nil*/},
+		RTPCodecCapability: webrtc.RTPCodecCapability{MimeType: codecMap["audio"].MimeType, ClockRate: uint32(codecMap["audio"].SampleRate) /*, Channels: 0, SDPFmtpLine: "", RTCPFeedback: nil*/},
 	}, webrtc.RTPCodecTypeAudio); err != nil {
 		panic(err)
 	}
@@ -727,10 +707,22 @@ func main() {
 	log.Println("Player START!")
 	flag.Parse()
 
+	codecMap = make(map[string]Codecs)
 	ListenUDPMap = make(map[string]*listenerConfig)
 	SourceToWebrtcMap = make(map[string]*SourceToWebrtcConfig)
 	remoteP2PQueueMap = make(map[string]*remoteP2PQueueConfig)
 	TracksMap = make(map[string]*TracksConfig)
+
+	codecMap["video"] = Codecs{
+		MimeType:      webrtc.MimeTypeH264,
+		SampleRate:    90000,
+		PacketMaxLate: 500,
+	}
+	codecMap["audio"] = Codecs{
+		MimeType:      webrtc.MimeTypeOpus,
+		SampleRate:    48000,
+		PacketMaxLate: 1,
+	}
 
 	go ini.ReadIniConfig()
 	go core.StartCMDServer()
