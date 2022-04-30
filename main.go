@@ -251,16 +251,16 @@ func initListenUDP(sc *core.StreamConfig) {
 			case 97:
 				kind = "audio"
 			}
-			log.Printf("initListenUDP <<<> kind: %s, n: %d, pt: %d", kind, n, rtpPacket.Header.PayloadType)
+			//log.Printf("initListenUDP <<<> kind: %s, n: %d, pt: %d", kind, n, rtpPacket.Header.PayloadType)
 			TracksMap[sn].Direction[broadcast].sampleBuffer[kind].Push(rtpPacket)
 			for {
 				sample := TracksMap[sn].Direction[broadcast].sampleBuffer[kind].Pop()
 				if sample == nil {
-					//log.Printf("initListenUDP << nie gotowy...., kind: %s", kind)
+					log.Printf("initListenUDP << nie gotowy...., kind: %s", kind)
 					break
 				}
 				//TracksMap[sn].Direction[broadcast].syncMap[oppositeKind] <- sample
-				//log.Printf("initListenUDP >> WriteSample!!!, kind: %s, ts: %d, dropped: %d", kind, sample.PacketTimestamp, sample.PrevDroppedPackets)
+				log.Printf("initListenUDP >> WriteSample!!!, kind: %s, ts: %d, dropped: %d", kind, sample.PacketTimestamp, sample.PrevDroppedPackets)
 				if err := TracksMap[sn].Direction[broadcast].kind[kind].WriteSample(*sample); err != nil {
 					log.Printf("initListenUDP, kind: %s, sn: %s, WriteSample error: %s", kind, sn, err)
 				}
