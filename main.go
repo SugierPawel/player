@@ -255,7 +255,7 @@ func initListenUDP(sc *core.StreamConfig) {
 				log.Printf("initListenUDP - rtcpConn, sn: %s, rtcpPacket.Unmarshal error: %s", sn, err)
 				break
 			}
-			log.Printf("initListenUDP - rtcpConn <<<< n: %d, pt: %d, rtcpPacket: \n%v\n", rtcpN, rtcpPacket.Header().Type, rtcpPacket)
+			log.Printf("initListenUDP - rtcpConn <<<< n: %d, pt: %s, ssrc: %d", rtcpN, rtcpPacket.Header().Type.String(), rtcpPacket.DestinationSSRC())
 
 			packet := make([]byte, 1200)
 			rtpPacket := &rtp.Packet{}
