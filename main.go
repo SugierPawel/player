@@ -19,6 +19,7 @@ import (
 	"github.com/pion/webrtc/v3"
 	"github.com/pion/webrtc/v3/pkg/media"
 	"github.com/pion/webrtc/v3/pkg/media/samplebuilder"
+	"github.com/pions/webrtc/pkg/rtcp"
 
 	"github.com/SugierPawel/player/ini"
 	"github.com/SugierPawel/player/rpc/core"
@@ -218,7 +219,15 @@ func initListenUDP(sc *core.StreamConfig) {
 			SourceToWebrtcMap[sn].answererExitChan <- true
 		}
 	}()
+	rtcpPort := port + 1
+	//rtcpVideoFBPort := port + 2
+	//rtcpAudiooFBPort := port + 3
 
+	rtcpConn, err := net.ListenUDP("udp", &net.UDPAddr{IP: net.ParseIP(IPIn), Port: rtcpPort})
+	if err != nil {
+		log.Printf("initListenUDP - rtcpConn, sn: %s, IPIn: %s, port: %d, err: %s", sn, IPIn, rtcpPort, err)
+		return
+	}
 	ListenUDPMap[sn].Conn, err = net.ListenUDP("udp", &net.UDPAddr{IP: net.ParseIP(IPIn), Port: port})
 	if err != nil {
 		log.Printf("initListenUDP, sn: %s, IPIn: %s, port: %d, err: %s", sn, IPIn, port, err)
@@ -231,9 +240,23 @@ func initListenUDP(sc *core.StreamConfig) {
 		//	log.Printf("initListenUDP <- syncChan, neighbor kind: %s, PacketTimestamp: %d, PrevDroppedPackets: %d", kind, neighborSample.PacketTimestamp, neighborSample.PrevDroppedPackets)
 		case <-ListenUDPMap[sn].CloseChan:
 			ListenUDPMap[sn].Conn.Close()
+			rtcpConn.Close()
 			delete(ListenUDPMap, sn)
 			return
 		default:
+			_packet := make([]byte, 1200)
+			rtcpPacket := &rtcp.RawPacket{}
+			rtcpN, _, err := rtcpConn.ReadFrom(_packet)
+			if err != nil {
+				log.Printf("initListenUDP - rtcpConn, sn: %s, ReadFrom error: %s", sn, err)
+				break
+			}
+			if err = rtcpPacket.Unmarshal(_packet[:rtcpN]); err != nil {
+				log.Printf("initListenUDP - rtcpConn, sn: %s, rtcpPacket.Unmarshal error: %s", sn, err)
+				break
+			}
+			log.Printf("initListenUDP - rtcpConn <<<< n: %d, pt: %d, rtcpPacket: \n%v\n", rtcpN, rtcpPacket.Header().Type, rtcpPacket)
+
 			packet := make([]byte, 1200)
 			rtpPacket := &rtp.Packet{}
 			n, _, err := ListenUDPMap[sn].Conn.ReadFrom(packet)
