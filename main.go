@@ -248,6 +248,8 @@ func (l *updSource) InitRtcp(sc *core.StreamConfig) {
 
 						}
 
+						//TracksMap[oc.channel].Direction["Broadcast"].ssrcMap["video"]
+
 						s, err := sender.Transport().WriteRTCP(packets)
 						if err != nil {
 							log.Printf("InitRtcp << błąd wysłania do rec: %s, err: %s", rec, err)
@@ -306,7 +308,7 @@ func (l *updSource) InitRtp(sc *core.StreamConfig) {
 			case 97:
 				kind = "audio"
 			}
-			TracksMap[sn].Direction[broadcast].ssrcMap[kind] = rtpPacket.SSRC
+			//TracksMap[sn].Direction[broadcast].ssrcMap[kind] = rtpPacket.SSRC
 
 			//log.Printf("InitRtp <<<< kind: %s, n: %d, pt: %d, SSRC: %d", kind, n, rtpPacket.Header.PayloadType, rtpPacket.SSRC)
 			TracksMap[sn].Direction[broadcast].sampleBuffer[kind].Push(rtpPacket)
@@ -411,8 +413,8 @@ func (l *updSource) localRTPofferer(sn string, offerSDP chan<- string, answerSDP
 	offer, err := SourceToWebrtcMap[sn].peerConnection.CreateOffer(nil)
 	check(fName, sn, err)
 
-	log.Printf(" >> rtp OFFER >>\n%v\n", offer.SDP)
-	//log.Printf(" >> rtp OFFER >>")
+	//log.Printf(" >> rtp OFFER >>\n%v\n", offer.SDP)
+	log.Printf(" >> rtp OFFER >>")
 
 	err = SourceToWebrtcMap[sn].peerConnection.SetLocalDescription(offer)
 	check(fName, sn, err)
@@ -420,8 +422,8 @@ func (l *updSource) localRTPofferer(sn string, offerSDP chan<- string, answerSDP
 	offerSDP <- offer.SDP
 
 	answer := <-answerSDP
-	log.Printf(" << rtp ANSWER <<\n%v\n", answer)
-	//log.Printf(" << rtp ANSWER <<")
+	//log.Printf(" << rtp ANSWER <<\n%v\n", answer)
+	log.Printf(" << rtp ANSWER <<")
 
 	err = SourceToWebrtcMap[sn].peerConnection.SetRemoteDescription(webrtc.SessionDescription{
 		Type: webrtc.SDPTypeAnswer,
@@ -760,20 +762,17 @@ func registerReceiver(client *wss.Client) {
 					sdp += line + "\n"
 				}
 			}
-			answerSdp := webrtc.SessionDescription{
-				Type: webrtc.SDPTypeAnswer,
-				SDP:  sdp,
-			}
+			answer.SDP = sdp
 
-			err = ReceiversWebrtcMap[sn].peerConnection.SetLocalDescription(answerSdp)
+			err = ReceiversWebrtcMap[sn].peerConnection.SetLocalDescription(answer)
 			check(fName, sn, err)
 
-			log.Printf(" >> ANSWER >> %s", sdp)
-			//log.Printf(" >> ANSWER >>")
+			//log.Printf(" >> ANSWER >> %s", sdp)
+			log.Printf(" >> ANSWER >>")
 
 			data, _ := json.Marshal(&JsMessage{
 				Request: "answer",
-				Data:    base64.URLEncoding.EncodeToString([]byte(answerSdp.SDP)),
+				Data:    base64.URLEncoding.EncodeToString([]byte(answer.SDP)),
 			})
 			client.Send <- data
 		case ic := <-remoteP2PQueueMap[sn].ice:
