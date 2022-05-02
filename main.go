@@ -235,8 +235,12 @@ func (l *updSource) InitRtcp(sc *core.StreamConfig) {
 			}
 			for rec, config := range ReceiversWebrtcMap {
 				if config.actualChannel == sn {
-					log.Printf("InitRtcp << wysyłam do rec: %s", rec)
-					config.peerConnection.WriteRTCP(packets)
+					err = config.peerConnection.WriteRTCP(packets)
+					if err != nil {
+						log.Printf("InitRtcp << błąd wysłania do rec: %s, err: %s", rec, err)
+					} else {
+						log.Printf("InitRtcp << wysłano do rec: %s", rec)
+					}
 				}
 			}
 
