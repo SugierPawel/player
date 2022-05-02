@@ -222,28 +222,20 @@ func (l *listenerConfig) InitRtcp(sc *core.StreamConfig) {
 			ListenUDPMap[sn].rtcpConn.Close()
 			return
 		default:
-			packet := make([]byte, 1200)
-			rtcpPacket := &rtcp.RawPacket{}
-			rtcpN, _, err := ListenUDPMap[sn].rtcpConn.ReadFrom(packet)
+			p := make([]byte, 1200)
+			rtcpN, _, err := ListenUDPMap[sn].rtcpConn.ReadFrom(p)
 			if err != nil {
 				log.Printf("InitRtcp, sn: %s, ReadFrom error: %s", sn, err)
 				break
 			}
-			if err = rtcpPacket.Unmarshal(packet[:rtcpN]); err != nil {
-				log.Printf("InitRtcp, sn: %s, rtcpPacket.Unmarshal error: %s", sn, err)
-				break
-			}
-			//log.Printf("InitRtcp <<<< n: %d, pt: %s, ssrc: %d", rtcpN, rtcpPacket.Header().Type, rtcpPacket.DestinationSSRC())
-			if err = rtcpPacket.Unmarshal(packet[:rtcpN]); err != nil {
-				log.Printf("InitRtcp, sn: %s, rtcpPacket.Unmarshal error: %s", sn, err)
-				break
-			}
-			switch rtcpPacket.Header().Type {
+			packet, header, err := rtcp.Unmarshal(p[:rtcpN])
+
+			switch header.Type {
 			case rtcp.TypeSenderReport:
-				log.Printf("InitRtcp << \n%v\n", rtcpPacket)
+				log.Printf("InitRtcp << \n%v\n", packet)
 
 			default:
-				log.Printf("InitRtcp, sn: %s, nieobsługiwany typ pakietu RTCP: %d", sn, rtcpPacket.Header().Type)
+				log.Printf("InitRtcp, sn: %s, nieobsługiwany typ pakietu RTCP: %d", sn, packet.Header().Type)
 			}
 
 		}
