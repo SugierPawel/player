@@ -269,10 +269,10 @@ func (l *updSource) InitRtcp(sc *core.StreamConfig) {
 
 					log.Printf(">> InitRtcp >> sn: %s, kind: %s, preSSRC: %d, DestinationSSRC: %d", sn, kind, preSSRC, sr.DestinationSSRC())
 
-					err = config.peerConnection.WriteRTCP([]rtcp.Packet{sr})
+					/*err = config.peerConnection.WriteRTCP([]rtcp.Packet{sr})
 					if err != nil {
 						log.Printf("InitRtcp, sn: %s, WriteRTCP error: %s", sn, err)
-					}
+					}*/
 
 					/*for _, sender := range config.peerConnection.GetSenders() {
 						switch sender.Track().Kind().String() {
