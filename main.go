@@ -405,8 +405,8 @@ func (l *updSource) localRTPofferer(sn string, offerSDP chan<- string, answerSDP
 	offer, err := SourceToWebrtcMap[sn].peerConnection.CreateOffer(nil)
 	check(fName, sn, err)
 
-	//log.Printf(" >> rtp OFFER >>\n%v\n", offer.SDP)
-	log.Printf(" >> rtp OFFER >>")
+	log.Printf(" >> rtp OFFER >>\n%v\n", offer.SDP)
+	//log.Printf(" >> rtp OFFER >>")
 
 	err = SourceToWebrtcMap[sn].peerConnection.SetLocalDescription(offer)
 	check(fName, sn, err)
@@ -414,8 +414,8 @@ func (l *updSource) localRTPofferer(sn string, offerSDP chan<- string, answerSDP
 	offerSDP <- offer.SDP
 
 	answer := <-answerSDP
-	//log.Printf(" << rtp ANSWER <<\n%v\n", answer)
-	log.Printf(" << rtp ANSWER <<")
+	log.Printf(" << rtp ANSWER <<\n%v\n", answer)
+	//log.Printf(" << rtp ANSWER <<")
 
 	err = SourceToWebrtcMap[sn].peerConnection.SetRemoteDescription(webrtc.SessionDescription{
 		Type: webrtc.SDPTypeAnswer,
