@@ -230,9 +230,10 @@ func (l *updSource) InitRtcp(sc *core.StreamConfig) {
 				break
 			}
 			packets, err := rtcp.Unmarshal(p[:rtcpN])
-			log.Printf("InitRtcp << packets: %v", packets)
-			for _, config := range ReceiversWebrtcMap {
+			//log.Printf("InitRtcp << packets: %v", packets)
+			for rec, config := range ReceiversWebrtcMap {
 				if config.actualChannel == sn {
+					log.Printf("InitRtcp << wysyłam do rec: %s", rec)
 					config.peerConnection.WriteRTCP(packets)
 				}
 			}
