@@ -240,7 +240,7 @@ func (l *listenerConfig) InitRtcp(sc *core.StreamConfig) {
 			}
 			switch rtcpPacket.Header().Type {
 			case rtcp.TypeSenderReport:
-				log.Printf("InitRtcp <<!!!!!!!!!!!!!!!!!!!!!!!! padding: \n%v\n, ssrc: \n%v\n, count: %d", rtcpPacket.Header().Padding, rtcpPacket.DestinationSSRC(), rtcpPacket.Header().Count)
+				log.Printf("InitRtcp <<!!!!!!!!!!!!!!!!!!!!!!!! padding: \n%v\n, ssrc: \n%v\n, count: %d", rtcpPacket.Header().Padding, rtcpPacket.DestinationSSRC()[0], rtcpPacket.Header().Count)
 
 			default:
 				log.Printf("InitRtcp, sn: %s, nieobsługiwany typ pakietu RTCP: %d", sn, rtcpPacket.Header().Type)
