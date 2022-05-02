@@ -745,7 +745,10 @@ func registerReceiver(client *wss.Client) {
 			var sdp string
 			var count int
 			for _, line := range strings.Split(answer.SDP, "\n") {
-				log.Printf(" >> ANSWER line: %v", line)
+				if line == "" {
+					break
+				}
+				//log.Printf(" >> ANSWER line: %v", line)
 				if strings.Index(line, "a=ssrc:") > -1 {
 					if count > 2 {
 						sdp += "a=ssrc:" + assrc + line[strings.Index(line, " "):]
