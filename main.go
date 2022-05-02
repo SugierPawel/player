@@ -50,6 +50,7 @@ type updSource struct {
 	ctx      context.Context
 	cancel   context.CancelFunc
 	ssrcMap  map[string]string
+	mutex    sync.Mutex
 }
 type iceConfig struct {
 	client *wss.Client
@@ -239,12 +240,14 @@ func (l *updSource) InitRtcp(sc *core.StreamConfig) {
 			sr := &rtcp.SenderReport{}
 			sr.Unmarshal(p[:rtcpN])
 
+			l.mutex.Lock()
 			var kind string
 			if fmt.Sprint(sr.SSRC) == l.ssrcMap["video"] {
 				kind = "video"
 			} else if fmt.Sprint(sr.SSRC) == l.ssrcMap["audio"] {
 				kind = "audio"
 			}
+			l.mutex.Unlock()
 			/*for n, packet := range packets {
 				log.Printf("InitRtcp << sn: %s, n: %d, SSRC: %d", sn, n, packet.DestinationSSRC())
 				//packets[n] = packet.DestinationSSRC()
@@ -334,7 +337,9 @@ func (l *updSource) InitRtp(sc *core.StreamConfig) {
 			case 97:
 				kind = "audio"
 			}
+			l.mutex.Lock()
 			l.ssrcMap[kind] = fmt.Sprint(rtpPacket.SSRC)
+			l.mutex.Unlock()
 
 			//log.Printf("InitRtp <<<< kind: %s, n: %d, pt: %d, SSRC: %d", kind, n, rtpPacket.Header.PayloadType, rtpPacket.SSRC)
 			TracksMap[sn].Direction[broadcast].sampleBuffer[kind].Push(rtpPacket)
