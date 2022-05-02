@@ -760,9 +760,12 @@ func registerReceiver(client *wss.Client) {
 					sdp += line + "\n"
 				}
 			}
-			answer.SDP = sdp + "\n"
+			answerSdp := webrtc.SessionDescription{
+				Type: webrtc.SDPTypeAnswer,
+				SDP:  sdp,
+			}
 
-			err = ReceiversWebrtcMap[sn].peerConnection.SetLocalDescription(answer)
+			err = ReceiversWebrtcMap[sn].peerConnection.SetLocalDescription(answerSdp)
 			check(fName, sn, err)
 
 			log.Printf(" >> ANSWER >> %s", sdp)
@@ -770,7 +773,7 @@ func registerReceiver(client *wss.Client) {
 
 			data, _ := json.Marshal(&JsMessage{
 				Request: "answer",
-				Data:    base64.URLEncoding.EncodeToString([]byte(answer.SDP)),
+				Data:    base64.URLEncoding.EncodeToString([]byte(answerSdp.SDP)),
 			})
 			client.Send <- data
 		case ic := <-remoteP2PQueueMap[sn].ice:
