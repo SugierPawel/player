@@ -751,13 +751,13 @@ func registerReceiver(client *wss.Client) {
 				//log.Printf(" >> ANSWER line: %v", line)
 				if strings.Index(line, "a=ssrc:") > -1 {
 					if count > 2 {
-						sdp += "a=ssrc:" + assrc + line[strings.Index(line, " "):]
+						sdp += "a=ssrc:" + assrc + line[strings.Index(line, " "):] + "\n"
 					} else {
-						sdp += "a=ssrc:" + vssrc + line[strings.Index(line, " "):]
+						sdp += "a=ssrc:" + vssrc + line[strings.Index(line, " "):] + "\n"
 					}
 					count++
 				} else {
-					sdp += line
+					sdp += line + "\n"
 				}
 			}
 			answer.SDP = sdp
