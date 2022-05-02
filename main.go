@@ -8,7 +8,6 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"flag"
-	"fmt"
 	"log"
 	"net"
 	"net/http"
@@ -81,7 +80,7 @@ type JsMessage struct {
 	Channel string `json:"channel"`
 }
 type TracksDirectionConfig struct {
-	ssrcMap      map[string]uint32
+	ssrcMap      map[string]string
 	depacketizer map[string]rtp.Depacketizer
 	sampleBuffer map[string]*samplebuilder.SampleBuilder
 	kind         map[string]*webrtc.TrackLocalStaticSample
@@ -182,7 +181,7 @@ func initLocalTracks(sc *core.StreamConfig, direction string) {
 	var err error
 
 	TracksMap[sn].Direction[direction] = new(TracksDirectionConfig)
-	TracksMap[sn].Direction[direction].ssrcMap = make(map[string]uint32)
+	TracksMap[sn].Direction[direction].ssrcMap = make(map[string]string)
 	TracksMap[sn].Direction[direction].kind = make(map[string]*webrtc.TrackLocalStaticSample)
 	TracksMap[sn].Direction[direction].depacketizer = make(map[string]rtp.Depacketizer)
 	TracksMap[sn].Direction[direction].sampleBuffer = make(map[string]*samplebuilder.SampleBuilder)
@@ -247,6 +246,8 @@ func (l *updSource) InitRtcp(sc *core.StreamConfig) {
 						case "audio":
 
 						}
+
+						log.Printf(", !!!!!!!!!!!!!!! %s ", TracksMap[sn].Direction["Broadcast"].kind[sender.Track().Kind().String()])
 
 						//TracksMap[oc.channel].Direction["Broadcast"].ssrcMap["video"]
 
@@ -742,7 +743,22 @@ func registerReceiver(client *wss.Client) {
 			answer, err := ReceiversWebrtcMap[sn].peerConnection.CreateAnswer(nil)
 			check(fName, sn, err)
 
-			var vssrc string = fmt.Sprint(TracksMap[oc.channel].Direction["Broadcast"].ssrcMap["video"])
+			var count int
+			for _, line := range strings.Split(answer.SDP, "\n") {
+				if line == "" {
+					break
+				}
+				if strings.Index(line, "a=ssrc:") > -1 {
+					if count == 0 {
+						TracksMap[oc.channel].Direction["Broadcast"].ssrcMap["video"] = line[8:strings.Index(line, " ")]
+					} else if count == 4 {
+						TracksMap[oc.channel].Direction["Broadcast"].ssrcMap["audio"] = line[8:strings.Index(line, " ")]
+					}
+					count++
+				}
+			}
+
+			/*var vssrc string = fmt.Sprint(TracksMap[oc.channel].Direction["Broadcast"].ssrcMap["video"])
 			var assrc string = fmt.Sprint(TracksMap[oc.channel].Direction["Broadcast"].ssrcMap["audio"])
 			var sdp string
 			var count int
@@ -762,7 +778,7 @@ func registerReceiver(client *wss.Client) {
 					sdp += line + "\n"
 				}
 			}
-			answer.SDP = sdp
+			answer.SDP = sdp*/
 
 			err = ReceiversWebrtcMap[sn].peerConnection.SetLocalDescription(answer)
 			check(fName, sn, err)
