@@ -760,7 +760,7 @@ func registerReceiver(client *wss.Client) {
 					sdp += line + "\n"
 				}
 			}
-			answer.SDP = sdp
+			answer.SDP = sdp + "\n"
 
 			err = ReceiversWebrtcMap[sn].peerConnection.SetLocalDescription(answer)
 			check(fName, sn, err)
