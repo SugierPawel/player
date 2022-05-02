@@ -240,10 +240,10 @@ func (l *updSource) InitRtcp(sc *core.StreamConfig) {
 			sr := &rtcp.SenderReport{}
 			sr.Unmarshal(p[:rtcpN])
 
-			err = SourceToWebrtcMap[sn].peerConnection.WriteRTCP([]rtcp.Packet{sr})
+			/*err = SourceToWebrtcMap[sn].peerConnection.WriteRTCP([]rtcp.Packet{sr})
 			if err != nil {
 				log.Printf("InitRtcp, sn: %s, SourceToWebrtcMap - WriteRTCP error: %s", sn, err)
-			}
+			}*/
 
 			l.mutex.Lock()
 			var kind string
