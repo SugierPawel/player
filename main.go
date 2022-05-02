@@ -8,6 +8,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"flag"
+	"fmt"
 	"log"
 	"net"
 	"net/http"
@@ -80,7 +81,7 @@ type JsMessage struct {
 	Channel string `json:"channel"`
 }
 type TracksDirectionConfig struct {
-	ssrcMap      map[string]uint32
+	ssrcMap      map[string]string
 	depacketizer map[string]rtp.Depacketizer
 	sampleBuffer map[string]*samplebuilder.SampleBuilder
 	kind         map[string]*webrtc.TrackLocalStaticSample
@@ -181,7 +182,7 @@ func initLocalTracks(sc *core.StreamConfig, direction string) {
 	var err error
 
 	TracksMap[sn].Direction[direction] = new(TracksDirectionConfig)
-	TracksMap[sn].Direction[direction].ssrcMap = make(map[string]uint32)
+	TracksMap[sn].Direction[direction].ssrcMap = make(map[string]string)
 	TracksMap[sn].Direction[direction].kind = make(map[string]*webrtc.TrackLocalStaticSample)
 	TracksMap[sn].Direction[direction].depacketizer = make(map[string]rtp.Depacketizer)
 	TracksMap[sn].Direction[direction].sampleBuffer = make(map[string]*samplebuilder.SampleBuilder)
@@ -232,15 +233,28 @@ func (l *updSource) InitRtcp(sc *core.StreamConfig) {
 				log.Printf("InitRtcp, sn: %s, ReadFrom error: %s", sn, err)
 				break
 			}
-			packets, err := rtcp.Unmarshal(p[:rtcpN])
-			for n, packet := range packets {
+			//packets, err := rtcp.Unmarshal(p[:rtcpN])
+			//pas := rtcp.Packet
+
+			sr := rtcp.SenderReport{}
+			sr.Unmarshal(p[:rtcpN])
+
+			log.Printf("!!!!!!!!InitRtcp << sn: %s, %v", sn, sr)
+
+			/*for n, packet := range packets {
 				log.Printf("InitRtcp << sn: %s, n: %d, SSRC: %d", sn, n, packet.DestinationSSRC())
 				//packets[n] = packet.DestinationSSRC()
-			}
-			for rec, config := range ReceiversWebrtcMap {
+			}*/
+
+			for _, config := range ReceiversWebrtcMap {
 				if config.actualChannel == sn {
 
-					for _, sender := range config.peerConnection.GetSenders() {
+					errSend := config.peerConnection.WriteRTCP([]rtcp.Packet{&sr})
+					if errSend != nil {
+						fmt.Println(errSend)
+					}
+
+					/*for _, sender := range config.peerConnection.GetSenders() {
 						switch sender.Track().Kind().String() {
 						case "video":
 
@@ -248,18 +262,17 @@ func (l *updSource) InitRtcp(sc *core.StreamConfig) {
 
 						}
 
-						log.Printf(", !!!!!!!!!!!!!!! %s ", TracksMap[sn].Direction["Broadcast"].kind[sender.Track().Kind().String()])
-
+						//log.Printf(", !!!!!!!!!!!!!!! %s ", TracksMap[sn].Direction["Broadcast"].kind[sender.Track().Kind().String()])
 						//TracksMap[oc.channel].Direction["Broadcast"].ssrcMap["video"]
 
-						s, err := sender.Transport().WriteRTCP(packets)
+						s, err := sender.Transport().WriteRTCP(pas)
 						if err != nil {
 							log.Printf("InitRtcp << błąd wysłania do rec: %s, err: %s", rec, err)
 						} else {
 							log.Printf("InitRtcp << wysłano: %d, do rec: %s, StreamID: %s", s, rec, sender.Track().StreamID())
 						}
 
-					}
+					}*/
 
 					//err = config.peerConnection.WriteRTCP(packets)
 
@@ -310,7 +323,7 @@ func (l *updSource) InitRtp(sc *core.StreamConfig) {
 			case 97:
 				kind = "audio"
 			}
-			//TracksMap[sn].Direction[broadcast].ssrcMap[kind] = rtpPacket.SSRC
+			TracksMap[sn].Direction["RTP"].ssrcMap[kind] = fmt.Sprint(rtpPacket.SSRC)
 
 			//log.Printf("InitRtp <<<< kind: %s, n: %d, pt: %d, SSRC: %d", kind, n, rtpPacket.Header.PayloadType, rtpPacket.SSRC)
 			TracksMap[sn].Direction[broadcast].sampleBuffer[kind].Push(rtpPacket)
@@ -751,35 +764,14 @@ func registerReceiver(client *wss.Client) {
 				}
 				if strings.Index(line, "a=ssrc:") > -1 {
 					if count == 0 {
-						//TracksMap[oc.channel].Direction["Broadcast"].ssrcMap["video"] = line[8:strings.Index(line, " ")]
+						TracksMap[oc.channel].Direction["Broadcast"].ssrcMap["video"] = line[8:strings.Index(line, " ")]
 					} else if count == 4 {
-						//TracksMap[oc.channel].Direction["Broadcast"].ssrcMap["audio"] = line[8:strings.Index(line, " ")]
+						TracksMap[oc.channel].Direction["Broadcast"].ssrcMap["audio"] = line[8:strings.Index(line, " ")]
+						break
 					}
 					count++
 				}
 			}
-
-			/*var vssrc string = fmt.Sprint(TracksMap[oc.channel].Direction["Broadcast"].ssrcMap["video"])
-			var assrc string = fmt.Sprint(TracksMap[oc.channel].Direction["Broadcast"].ssrcMap["audio"])
-			var sdp string
-			var count int
-			for _, line := range strings.Split(answer.SDP, "\n") {
-				if line == "" {
-					break
-				}
-				//log.Printf(" >> ANSWER line: %v", line)
-				if strings.Index(line, "a=ssrc:") > -1 {
-					if count > 3 {
-						sdp += "a=ssrc:" + assrc + line[strings.Index(line, " "):] + "\n"
-					} else {
-						sdp += "a=ssrc:" + vssrc + line[strings.Index(line, " "):] + "\n"
-					}
-					count++
-				} else {
-					sdp += line + "\n"
-				}
-			}
-			answer.SDP = sdp*/
 
 			err = ReceiversWebrtcMap[sn].peerConnection.SetLocalDescription(answer)
 			check(fName, sn, err)
