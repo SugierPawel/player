@@ -240,6 +240,11 @@ func (l *updSource) InitRtcp(sc *core.StreamConfig) {
 			sr := &rtcp.SenderReport{}
 			sr.Unmarshal(p[:rtcpN])
 
+			err = SourceToWebrtcMap[sn].answerPeerConnection.WriteRTCP([]rtcp.Packet{sr})
+			if err != nil {
+				log.Printf("InitRtcp, sn: %s, SourceToWebrtcMap - WriteRTCP error: %s", sn, err)
+			}
+
 			l.mutex.Lock()
 			var kind string
 			if fmt.Sprint(sr.SSRC) == l.ssrcMap["video"] {
@@ -248,6 +253,7 @@ func (l *updSource) InitRtcp(sc *core.StreamConfig) {
 				kind = "audio"
 			}
 			l.mutex.Unlock()
+
 			/*for n, packet := range packets {
 				log.Printf("InitRtcp << sn: %s, n: %d, SSRC: %d", sn, n, packet.DestinationSSRC())
 				//packets[n] = packet.DestinationSSRC()
