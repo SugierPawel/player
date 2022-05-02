@@ -784,6 +784,28 @@ func registerReceiver(client *wss.Client) {
 				}
 			}
 
+			/*var vssrc string = fmt.Sprint(TracksMap[oc.channel].Direction["Broadcast"].ssrcMap["video"])
+			var assrc string = fmt.Sprint(TracksMap[oc.channel].Direction["Broadcast"].ssrcMap["audio"])
+			var sdp string
+			var count int
+			for _, line := range strings.Split(answer.SDP, "\n") {
+				if line == "" {
+					break
+				}
+				//log.Printf(" >> ANSWER line: %v", line)
+				if strings.Index(line, "a=ssrc:") > -1 {
+					if count > 3 {
+						sdp += "a=ssrc:" + assrc + line[strings.Index(line, " "):] + "\n"
+					} else {
+						sdp += "a=ssrc:" + vssrc + line[strings.Index(line, " "):] + "\n"
+					}
+					count++
+				} else {
+					sdp += line + "\n"
+				}
+			}
+			answer.SDP = sdp*/
+
 			log.Printf(" >> *************** >> video: %s, audio: %s", ReceiversWebrtcMap[sn].ssrcMap["video"], ReceiversWebrtcMap[sn].ssrcMap["audio"])
 
 			err = ReceiversWebrtcMap[sn].peerConnection.SetLocalDescription(answer)
