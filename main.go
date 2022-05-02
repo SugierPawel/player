@@ -191,7 +191,7 @@ func initLocalTracks(sc *core.StreamConfig, direction string) {
 			uint32(codecMap[kind].SampleRate))
 		TracksMap[sn].Direction[direction].kind[kind], err = webrtc.NewTrackLocalStaticSample(
 			webrtc.RTPCodecCapability{MimeType: codecMap[kind].MimeType},
-			"av_"+sc.ChannelName,
+			kind,
 			sc.ChannelName)
 		if err != nil {
 			log.Printf("initLocalTracks, sn: %s, kind: %s, direction: %s, error: %s", sn, kind, direction, err)
@@ -230,7 +230,12 @@ func (l *updSource) InitRtcp(sc *core.StreamConfig) {
 				break
 			}
 			packets, err := rtcp.Unmarshal(p[:rtcpN])
-			//log.Printf("InitRtcp << packets: %v", packets)
+			for _, packet := range packets {
+				log.Printf("InitRtcp << packet: %v", packet.DestinationSSRC())
+				packet.Unmarshal(p[:rtcpN])
+				log.Printf("InitRtcp << packet: %v", packet)
+			}
+			//
 			for rec, config := range ReceiversWebrtcMap {
 				if config.actualChannel == sn {
 					log.Printf("InitRtcp << wysyłam do rec: %s", rec)
