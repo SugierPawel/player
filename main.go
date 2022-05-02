@@ -36,6 +36,7 @@ var sourceMutex sync.Mutex
 var ListenUDPMap map[string]*listenerConfig
 var TracksMap map[string]*TracksConfig
 var SourceToWebrtcMap map[string]*SourceToWebrtcConfig
+var ReceiversWebrtcMap map[string]*SourceToWebrtcConfig
 var remoteP2PQueueMap map[string]*remoteP2PQueueConfig
 var codecMap map[string]Codecs
 
@@ -537,15 +538,15 @@ func changeChannel(client *wss.Client, channel string) {
 		log.Printf(" << CHANGE CHANNEL << klient: %s, brak aktywnego źródła rtp:// %s", sn, channel)
 		return
 	}
-	if _, ok := SourceToWebrtcMap[sn]; !ok {
+	if _, ok := ReceiversWebrtcMap[sn]; !ok {
 		log.Printf(" << CHANGE CHANNEL << klient: %s nie ma aktywnego połączenia WebRTC ('js':NEWSWEBRTC.rtcpConnect()), channel: %s", sn, channel)
 		return
 	}
-	if SourceToWebrtcMap[sn].actualChannel == channel {
+	if ReceiversWebrtcMap[sn].actualChannel == channel {
 		log.Printf(" << CHANGE CHANNEL << klient: %s, kanał: %s jest już aktywny", sn, channel)
 		return
-	} else if SourceToWebrtcMap[sn].actualChannel != "" {
-		log.Printf(" << REPLACE CHANNEL << klient: %s, zamieniam: %s / %s", sn, SourceToWebrtcMap[sn].actualChannel, channel)
+	} else if ReceiversWebrtcMap[sn].actualChannel != "" {
+		log.Printf(" << REPLACE CHANNEL << klient: %s, zamieniam: %s / %s", sn, ReceiversWebrtcMap[sn].actualChannel, channel)
 		for _, sender := range SourceToWebrtcMap[sn].peerConnection.GetSenders() {
 
 			kind := sender.Track().Kind().String()
@@ -569,10 +570,10 @@ func changeChannel(client *wss.Client, channel string) {
 				case "audio":
 				}*/
 		}
-	} else if SourceToWebrtcMap[sn].actualChannel == "" {
+	} else if ReceiversWebrtcMap[sn].actualChannel == "" {
 		log.Printf(" << ASIGN CHANNEL << klient: %s, kanał: %s", sn, channel)
 		for _, track := range TracksMap[channel].Direction["Broadcast"].kind {
-			_, err := SourceToWebrtcMap[sn].peerConnection.AddTrack(track)
+			_, err := ReceiversWebrtcMap[sn].peerConnection.AddTrack(track)
 			check(fName, sn, err)
 			/*go func() {
 				rtcpBuf := make([]byte, 1500)
@@ -586,12 +587,12 @@ func changeChannel(client *wss.Client, channel string) {
 				}
 			}()*/
 		}
-		//_, err = SourceToWebrtcMap[sn].peerConnection.AddTrack(TracksMap[channel].Direction["Broadcast"].kind["audio"])
+		//_, err = ReceiversWebrtcMap[sn].peerConnection.AddTrack(TracksMap[channel].Direction["Broadcast"].kind["audio"])
 		//check(fName, sn, err)
-		//_, err = SourceToWebrtcMap[sn].peerConnection.AddTrack(TracksMap[channel].Direction["Broadcast"].kind["video"])
+		//_, err = ReceiversWebrtcMap[sn].peerConnection.AddTrack(TracksMap[channel].Direction["Broadcast"].kind["video"])
 		//check(fName, sn, err)
 	}
-	SourceToWebrtcMap[sn].actualChannel = channel
+	ReceiversWebrtcMap[sn].actualChannel = channel
 }
 func registerReceiver(client *wss.Client) {
 	var err error
@@ -602,34 +603,34 @@ func registerReceiver(client *wss.Client) {
 	remoteP2PQueueMap[sn] = new(remoteP2PQueueConfig)
 	remoteP2PQueueMap[sn].offer = make(chan offerConfig)
 	remoteP2PQueueMap[sn].ice = make(chan iceConfig, 20)
-	SourceToWebrtcMap[sn] = new(SourceToWebrtcConfig)
-	SourceToWebrtcMap[sn].mediaEngine = &webrtc.MediaEngine{}
-	SourceToWebrtcMap[sn].settingEngine = &webrtc.SettingEngine{}
-	SourceToWebrtcMap[sn].interceptor = &interceptor.Registry{}
-	SourceToWebrtcMap[sn].receiverExitChan = make(chan bool)
-	SourceToWebrtcMap[sn].actualChannel = ""
+	ReceiversWebrtcMap[sn] = new(SourceToWebrtcConfig)
+	ReceiversWebrtcMap[sn].mediaEngine = &webrtc.MediaEngine{}
+	ReceiversWebrtcMap[sn].settingEngine = &webrtc.SettingEngine{}
+	ReceiversWebrtcMap[sn].interceptor = &interceptor.Registry{}
+	ReceiversWebrtcMap[sn].receiverExitChan = make(chan bool)
+	ReceiversWebrtcMap[sn].actualChannel = ""
 
-	if err := SourceToWebrtcMap[sn].mediaEngine.RegisterCodec(webrtc.RTPCodecParameters{
+	if err := ReceiversWebrtcMap[sn].mediaEngine.RegisterCodec(webrtc.RTPCodecParameters{
 		RTPCodecCapability: webrtc.RTPCodecCapability{MimeType: codecMap["video"].MimeType, ClockRate: uint32(codecMap["video"].SampleRate) /*, Channels: 0, SDPFmtpLine: "", RTCPFeedback: nil*/},
 	}, webrtc.RTPCodecTypeVideo); err != nil {
 		panic(err)
 	}
-	if err := SourceToWebrtcMap[sn].mediaEngine.RegisterCodec(webrtc.RTPCodecParameters{
+	if err := ReceiversWebrtcMap[sn].mediaEngine.RegisterCodec(webrtc.RTPCodecParameters{
 		RTPCodecCapability: webrtc.RTPCodecCapability{MimeType: codecMap["audio"].MimeType, ClockRate: uint32(codecMap["audio"].SampleRate) /*, Channels: 0, SDPFmtpLine: "", RTCPFeedback: nil*/},
 	}, webrtc.RTPCodecTypeAudio); err != nil {
 		panic(err)
 	}
 
-	if err := webrtc.RegisterDefaultInterceptors(SourceToWebrtcMap[sn].mediaEngine, SourceToWebrtcMap[sn].interceptor); err != nil {
+	if err := webrtc.RegisterDefaultInterceptors(ReceiversWebrtcMap[sn].mediaEngine, ReceiversWebrtcMap[sn].interceptor); err != nil {
 		panic(err)
 	}
 
-	SourceToWebrtcMap[sn].api = webrtc.NewAPI(
-		webrtc.WithSettingEngine(*SourceToWebrtcMap[sn].settingEngine),
-		webrtc.WithMediaEngine(SourceToWebrtcMap[sn].mediaEngine),
-		webrtc.WithInterceptorRegistry(SourceToWebrtcMap[sn].interceptor),
+	ReceiversWebrtcMap[sn].api = webrtc.NewAPI(
+		webrtc.WithSettingEngine(*ReceiversWebrtcMap[sn].settingEngine),
+		webrtc.WithMediaEngine(ReceiversWebrtcMap[sn].mediaEngine),
+		webrtc.WithInterceptorRegistry(ReceiversWebrtcMap[sn].interceptor),
 	)
-	SourceToWebrtcMap[sn].peerConnection, err = SourceToWebrtcMap[sn].api.NewPeerConnection(webrtc.Configuration{ICEServers: []webrtc.ICEServer{}})
+	ReceiversWebrtcMap[sn].peerConnection, err = ReceiversWebrtcMap[sn].api.NewPeerConnection(webrtc.Configuration{ICEServers: []webrtc.ICEServer{}})
 	check(fName, sn, err)
 
 	jsonStr, _ := json.Marshal(ini.SCMap)
@@ -641,11 +642,11 @@ func registerReceiver(client *wss.Client) {
 
 	defer func() {
 		log.Printf("unRegisterReceiver: %s", sn)
-		SourceToWebrtcMap[sn].peerConnection.Close()
+		ReceiversWebrtcMap[sn].peerConnection.Close()
 		close(remoteP2PQueueMap[sn].ice)
 		close(remoteP2PQueueMap[sn].offer)
-		close(SourceToWebrtcMap[sn].receiverExitChan)
-		delete(SourceToWebrtcMap, sn)
+		close(ReceiversWebrtcMap[sn].receiverExitChan)
+		delete(ReceiversWebrtcMap, sn)
 		delete(remoteP2PQueueMap, sn)
 		client.Hub.Kill <- client
 	}()
@@ -655,14 +656,14 @@ func registerReceiver(client *wss.Client) {
 			var err error
 			log.Printf(" << OFFER << %s, channel: %s", sn, oc.channel)
 
-			SourceToWebrtcMap[sn].peerConnection.Close()
-			SourceToWebrtcMap[sn].peerConnection, err = SourceToWebrtcMap[sn].api.NewPeerConnection(receiverWebrtcConfiguration)
+			ReceiversWebrtcMap[sn].peerConnection.Close()
+			ReceiversWebrtcMap[sn].peerConnection, err = ReceiversWebrtcMap[sn].api.NewPeerConnection(receiverWebrtcConfiguration)
 			check(fName, sn, err)
 
-			SourceToWebrtcMap[sn].peerConnection.OnConnectionStateChange(func(state webrtc.PeerConnectionState) {
+			ReceiversWebrtcMap[sn].peerConnection.OnConnectionStateChange(func(state webrtc.PeerConnectionState) {
 				log.Printf("client - OnConnectionStateChange, sn: %s, State: %s\n", sn, state.String())
 			})
-			SourceToWebrtcMap[sn].peerConnection.OnICECandidate(func(ice *webrtc.ICECandidate) {
+			ReceiversWebrtcMap[sn].peerConnection.OnICECandidate(func(ice *webrtc.ICECandidate) {
 				if ice == nil {
 					return
 				}
@@ -679,35 +680,35 @@ func registerReceiver(client *wss.Client) {
 				})
 				client.Send <- data
 			})
-			SourceToWebrtcMap[sn].peerConnection.OnICEConnectionStateChange(func(state webrtc.ICEConnectionState) {
+			ReceiversWebrtcMap[sn].peerConnection.OnICEConnectionStateChange(func(state webrtc.ICEConnectionState) {
 				log.Printf("client - OnICEConnectionStateChange, sn: %s, State: %s\n", sn, state.String())
 			})
-			SourceToWebrtcMap[sn].peerConnection.OnICEGatheringStateChange(func(state webrtc.ICEGathererState) {
+			ReceiversWebrtcMap[sn].peerConnection.OnICEGatheringStateChange(func(state webrtc.ICEGathererState) {
 				log.Printf("client - OnICEGatheringStateChange, sn: %s, State: %s\n", sn, state.String())
 			})
-			SourceToWebrtcMap[sn].peerConnection.OnNegotiationNeeded(func() {
+			ReceiversWebrtcMap[sn].peerConnection.OnNegotiationNeeded(func() {
 				log.Printf("client - OnNegotiationNeeded, sn: %s", sn)
 			})
-			SourceToWebrtcMap[sn].peerConnection.OnSignalingStateChange(func(state webrtc.SignalingState) {
+			ReceiversWebrtcMap[sn].peerConnection.OnSignalingStateChange(func(state webrtc.SignalingState) {
 				log.Printf("client - OnSignalingStateChange, sn: %s, State: %s\n", sn, state.String())
 			})
-			SourceToWebrtcMap[sn].peerConnection.OnTrack(func(track *webrtc.TrackRemote, receiver *webrtc.RTPReceiver) {
+			ReceiversWebrtcMap[sn].peerConnection.OnTrack(func(track *webrtc.TrackRemote, receiver *webrtc.RTPReceiver) {
 				kind := track.Kind().String()
 				log.Printf("registerReceiver - sn: %s, OnTrack track.Kind(): %s", sn, kind)
 			})
 
-			err = SourceToWebrtcMap[sn].peerConnection.SetRemoteDescription(webrtc.SessionDescription{
+			err = ReceiversWebrtcMap[sn].peerConnection.SetRemoteDescription(webrtc.SessionDescription{
 				Type: webrtc.SDPTypeOffer,
 				SDP:  oc.offer,
 			})
 			check(fName, sn, err)
 
-			SourceToWebrtcMap[sn].actualChannel = ""
+			ReceiversWebrtcMap[sn].actualChannel = ""
 			changeChannel(client, oc.channel)
 
-			answer, err := SourceToWebrtcMap[sn].peerConnection.CreateAnswer(nil)
+			answer, err := ReceiversWebrtcMap[sn].peerConnection.CreateAnswer(nil)
 			check(fName, sn, err)
-			err = SourceToWebrtcMap[sn].peerConnection.SetLocalDescription(answer)
+			err = ReceiversWebrtcMap[sn].peerConnection.SetLocalDescription(answer)
 			check(fName, sn, err)
 
 			log.Printf(" >> ANSWER >> %s", answer.Type.String())
@@ -719,9 +720,9 @@ func registerReceiver(client *wss.Client) {
 			client.Send <- data
 		case ic := <-remoteP2PQueueMap[sn].ice:
 			log.Printf(" << ICE << Candidate: %s, SDPMLineIndex: %d", ic.init.Candidate, ic.init.SDPMLineIndex)
-			err := SourceToWebrtcMap[sn].peerConnection.AddICECandidate(ic.init)
+			err := ReceiversWebrtcMap[sn].peerConnection.AddICECandidate(ic.init)
 			check(fName, sn, err)
-		case <-SourceToWebrtcMap[sn].receiverExitChan:
+		case <-ReceiversWebrtcMap[sn].receiverExitChan:
 			return
 		default:
 			<-time.After(sleepTime)
@@ -730,10 +731,10 @@ func registerReceiver(client *wss.Client) {
 }
 func unRegisterReceiver(client *wss.Client) {
 	var sn = client.Conn.RemoteAddr().String()
-	if _, ok := SourceToWebrtcMap[sn]; !ok {
+	if _, ok := ReceiversWebrtcMap[sn]; !ok {
 		return
 	}
-	SourceToWebrtcMap[sn].receiverExitChan <- true
+	ReceiversWebrtcMap[sn].receiverExitChan <- true
 }
 
 func main() {
@@ -743,6 +744,7 @@ func main() {
 	codecMap = make(map[string]Codecs)
 	ListenUDPMap = make(map[string]*listenerConfig)
 	SourceToWebrtcMap = make(map[string]*SourceToWebrtcConfig)
+	ReceiversWebrtcMap = make(map[string]*SourceToWebrtcConfig)
 	remoteP2PQueueMap = make(map[string]*remoteP2PQueueConfig)
 	TracksMap = make(map[string]*TracksConfig)
 
