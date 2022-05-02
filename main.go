@@ -231,7 +231,7 @@ func (l *updSource) InitRtcp(sc *core.StreamConfig) {
 			}
 			packets, err := rtcp.Unmarshal(p[:rtcpN])
 			for n, packet := range packets {
-				log.Printf("InitRtcp << n: %d, SSRC: %d", n, packet.DestinationSSRC())
+				log.Printf("InitRtcp << sn: %s, n: %d, SSRC: %d", sn, n, packet.DestinationSSRC())
 			}
 			for rec, config := range ReceiversWebrtcMap {
 				if config.actualChannel == sn {
