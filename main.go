@@ -48,6 +48,7 @@ type updSource struct {
 	wg       *sync.WaitGroup
 	ctx      context.Context
 	cancel   context.CancelFunc
+	ssrcMap  map[string]string
 }
 type iceConfig struct {
 	client *wss.Client
@@ -72,7 +73,7 @@ type SourceToWebrtcConfig struct {
 	answerPeerConnection *webrtc.PeerConnection
 	remoteDescription    *webrtc.SessionDescription
 	actualChannel        string
-	ssrc                 webrtc.SSRC
+	ssrcMap              map[string]string
 	receiverExitChan     chan bool
 }
 type JsMessage struct {
@@ -131,6 +132,7 @@ func AddRTPsource(sc *core.StreamConfig) {
 	TracksMap[sn] = new(TracksConfig)
 	TracksMap[sn].Direction = make(map[string]*TracksDirectionConfig)
 	updSourceMap[sn] = new(updSource)
+	updSourceMap[sn].ssrcMap = make(map[string]string)
 	SourceToWebrtcMap[sn] = new(SourceToWebrtcConfig)
 
 	initLocalTracks(sc, "RTP")
@@ -238,8 +240,9 @@ func (l *updSource) InitRtcp(sc *core.StreamConfig) {
 
 			sr := rtcp.SenderReport{}
 			sr.Unmarshal(p[:rtcpN])
+			//sr.SSRC
 
-			log.Printf("!!!!!!!!InitRtcp << sn: %s, %v", sn, sr)
+			log.Printf("!!!!!!!!InitRtcp << sn: %s, %v", sn, sr.SSRC)
 
 			/*for n, packet := range packets {
 				log.Printf("InitRtcp << sn: %s, n: %d, SSRC: %d", sn, n, packet.DestinationSSRC())
@@ -249,9 +252,9 @@ func (l *updSource) InitRtcp(sc *core.StreamConfig) {
 			for _, config := range ReceiversWebrtcMap {
 				if config.actualChannel == sn {
 
-					errSend := config.peerConnection.WriteRTCP([]rtcp.Packet{&sr})
-					if errSend != nil {
-						fmt.Println(errSend)
+					err = config.peerConnection.WriteRTCP([]rtcp.Packet{&sr})
+					if err != nil {
+						log.Printf("InitRtcp, sn: %s, WriteRTCP error: %s", sn, err)
 					}
 
 					/*for _, sender := range config.peerConnection.GetSenders() {
@@ -323,7 +326,7 @@ func (l *updSource) InitRtp(sc *core.StreamConfig) {
 			case 97:
 				kind = "audio"
 			}
-			TracksMap[sn].Direction["RTP"].ssrcMap[kind] = fmt.Sprint(rtpPacket.SSRC)
+			l.ssrcMap[kind] = fmt.Sprint(rtpPacket.SSRC)
 
 			//log.Printf("InitRtp <<<< kind: %s, n: %d, pt: %d, SSRC: %d", kind, n, rtpPacket.Header.PayloadType, rtpPacket.SSRC)
 			TracksMap[sn].Direction[broadcast].sampleBuffer[kind].Push(rtpPacket)
@@ -655,6 +658,7 @@ func registerReceiver(client *wss.Client) {
 	ReceiversWebrtcMap[sn].settingEngine = &webrtc.SettingEngine{}
 	ReceiversWebrtcMap[sn].interceptor = &interceptor.Registry{}
 	ReceiversWebrtcMap[sn].receiverExitChan = make(chan bool)
+	ReceiversWebrtcMap[sn].ssrcMap = make(map[string]string)
 	ReceiversWebrtcMap[sn].actualChannel = ""
 
 	if err := ReceiversWebrtcMap[sn].mediaEngine.RegisterCodec(webrtc.RTPCodecParameters{
@@ -764,9 +768,9 @@ func registerReceiver(client *wss.Client) {
 				}
 				if strings.Index(line, "a=ssrc:") > -1 {
 					if count == 0 {
-						TracksMap[oc.channel].Direction["Broadcast"].ssrcMap["video"] = line[8:strings.Index(line, " ")]
+						ReceiversWebrtcMap[sn].ssrcMap["video"] = line[8:strings.Index(line, " ")]
 					} else if count == 4 {
-						TracksMap[oc.channel].Direction["Broadcast"].ssrcMap["audio"] = line[8:strings.Index(line, " ")]
+						ReceiversWebrtcMap[sn].ssrcMap["audio"] = line[8:strings.Index(line, " ")]
 						break
 					}
 					count++
