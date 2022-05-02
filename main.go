@@ -784,6 +784,8 @@ func registerReceiver(client *wss.Client) {
 				}
 			}
 
+			log.Printf(" >> *************** >> video: %s, audio: %s", ReceiversWebrtcMap[sn].ssrcMap["video"], ReceiversWebrtcMap[sn].ssrcMap["audio"])
+
 			err = ReceiversWebrtcMap[sn].peerConnection.SetLocalDescription(answer)
 			check(fName, sn, err)
 
