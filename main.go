@@ -237,6 +237,12 @@ func (l *updSource) InitRtcp(sc *core.StreamConfig) {
 				if config.actualChannel == sn {
 
 					for _, sender := range config.peerConnection.GetSenders() {
+						switch sender.Track().Kind().String() {
+						case "video":
+
+						case "audio":
+
+						}
 
 						s, err := sender.Transport().WriteRTCP(packets)
 						if err != nil {
@@ -289,13 +295,14 @@ func (l *updSource) InitRtp(sc *core.StreamConfig) {
 				log.Printf("InitRtp, sn: %s, rtpPacket.Unmarshal error: %s", sn, err)
 				break
 			}
+
 			switch rtpPacket.Header.PayloadType {
 			case 96:
 				kind = "video"
 			case 97:
 				kind = "audio"
 			}
-			//log.Printf("InitRtp <<<< kind: %s, n: %d, pt: %d", kind, n, rtpPacket.Header.PayloadType)
+			log.Printf("InitRtp <<<< kind: %s, n: %d, pt: %d, SSRC: %d", kind, n, rtpPacket.Header.PayloadType, rtpPacket.SSRC)
 			TracksMap[sn].Direction[broadcast].sampleBuffer[kind].Push(rtpPacket)
 			for {
 				sample := TracksMap[sn].Direction[broadcast].sampleBuffer[kind].Pop()
@@ -398,7 +405,8 @@ func (l *updSource) localRTPofferer(sn string, offerSDP chan<- string, answerSDP
 	offer, err := SourceToWebrtcMap[sn].peerConnection.CreateOffer(nil)
 	check(fName, sn, err)
 
-	log.Printf(" >> rtp OFFER >>\n%v\n", offer.SDP)
+	//log.Printf(" >> rtp OFFER >>\n%v\n", offer.SDP)
+	log.Printf(" >> rtp OFFER >>")
 
 	err = SourceToWebrtcMap[sn].peerConnection.SetLocalDescription(offer)
 	check(fName, sn, err)
@@ -406,7 +414,8 @@ func (l *updSource) localRTPofferer(sn string, offerSDP chan<- string, answerSDP
 	offerSDP <- offer.SDP
 
 	answer := <-answerSDP
-	log.Printf(" << rtp ANSWER <<\n%v\n", answer)
+	//log.Printf(" << rtp ANSWER <<\n%v\n", answer)
+	log.Printf(" << rtp ANSWER <<")
 
 	err = SourceToWebrtcMap[sn].peerConnection.SetRemoteDescription(webrtc.SessionDescription{
 		Type: webrtc.SDPTypeAnswer,
