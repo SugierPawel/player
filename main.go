@@ -15,11 +15,11 @@ import (
 	"time"
 
 	"github.com/pion/interceptor"
+	"github.com/pion/rtcp"
 	"github.com/pion/rtp"
 	"github.com/pion/rtp/codecs"
 	"github.com/pion/webrtc/v3"
 	"github.com/pion/webrtc/v3/pkg/media/samplebuilder"
-	"github.com/pions/webrtc/pkg/rtcp"
 
 	"github.com/SugierPawel/player/ini"
 	"github.com/SugierPawel/player/rpc/core"
@@ -33,14 +33,14 @@ const (
 
 var wssHub *wss.Hub
 var sourceMutex sync.Mutex
-var ListenUDPMap map[string]*listenerConfig
+var updSourceMap map[string]*updSource
 var TracksMap map[string]*TracksConfig
 var SourceToWebrtcMap map[string]*SourceToWebrtcConfig
 var ReceiversWebrtcMap map[string]*SourceToWebrtcConfig
 var remoteP2PQueueMap map[string]*remoteP2PQueueConfig
 var codecMap map[string]Codecs
 
-type listenerConfig struct {
+type updSource struct {
 	rtcpConn *net.UDPConn
 	rtpConn  *net.UDPConn
 	wg       *sync.WaitGroup
@@ -127,25 +127,25 @@ func AddRTPsource(sc *core.StreamConfig) {
 
 	TracksMap[sn] = new(TracksConfig)
 	TracksMap[sn].Direction = make(map[string]*TracksDirectionConfig)
-	ListenUDPMap[sn] = new(listenerConfig)
+	updSourceMap[sn] = new(updSource)
 	SourceToWebrtcMap[sn] = new(SourceToWebrtcConfig)
 
 	initLocalTracks(sc, "RTP")
 	initLocalTracks(sc, "Broadcast")
 
-	ListenUDPMap[sn].wg = &sync.WaitGroup{}
-	ListenUDPMap[sn].ctx, ListenUDPMap[sn].cancel = context.WithCancel(context.Background())
+	updSourceMap[sn].wg = &sync.WaitGroup{}
+	updSourceMap[sn].ctx, updSourceMap[sn].cancel = context.WithCancel(context.Background())
 
-	go ListenUDPMap[sn].InitRtcp(sc)
-	go ListenUDPMap[sn].InitRtp(sc)
+	go updSourceMap[sn].InitRtcp(sc)
+	go updSourceMap[sn].InitRtp(sc)
 
 	sdp1 := make(chan string, 1)
 	sdp2 := make(chan string, 1)
 	ice1 := make(chan *webrtc.ICECandidate, 1)
 	ice2 := make(chan *webrtc.ICECandidate, 1)
 
-	go ListenUDPMap[sn].localRTPofferer(sn, sdp1, sdp2, ice1, ice2)
-	go ListenUDPMap[sn].localRTPanswerer(sn, sdp1, sdp2, ice1, ice2)
+	go updSourceMap[sn].localRTPofferer(sn, sdp1, sdp2, ice1, ice2)
+	go updSourceMap[sn].localRTPanswerer(sn, sdp1, sdp2, ice1, ice2)
 
 	jsonStr, _ := json.Marshal(sc)
 	data, _ := json.Marshal(&JsMessage{
@@ -166,12 +166,12 @@ func DelRTPsource(sc *core.StreamConfig) {
 	})
 	wssHub.Broadcast <- data
 
-	ListenUDPMap[sn].wg.Add(4)
-	ListenUDPMap[sn].cancel()
-	ListenUDPMap[sn].wg.Wait()
+	updSourceMap[sn].wg.Add(4)
+	updSourceMap[sn].cancel()
+	updSourceMap[sn].wg.Wait()
 
 	delete(TracksMap, sn)
-	delete(ListenUDPMap, sn)
+	delete(updSourceMap, sn)
 }
 
 func initLocalTracks(sc *core.StreamConfig, direction string) {
@@ -199,7 +199,7 @@ func initLocalTracks(sc *core.StreamConfig, direction string) {
 	}
 }
 
-func (l *listenerConfig) InitRtcp(sc *core.StreamConfig) {
+func (l *updSource) InitRtcp(sc *core.StreamConfig) {
 	defer func() {
 		l.wg.Done()
 	}()
@@ -211,7 +211,7 @@ func (l *listenerConfig) InitRtcp(sc *core.StreamConfig) {
 	//rtcpVideoFBPort := port + 2
 	//rtcpAudiooFBPort := port + 3
 
-	ListenUDPMap[sn].rtcpConn, err = net.ListenUDP("udp", &net.UDPAddr{IP: net.ParseIP(IPIn), Port: rtcpPort})
+	updSourceMap[sn].rtcpConn, err = net.ListenUDP("udp", &net.UDPAddr{IP: net.ParseIP(IPIn), Port: rtcpPort})
 	if err != nil {
 		log.Printf("InitRtcp, sn: %s, IPIn: %s, port: %d, err: %s", sn, IPIn, rtcpPort, err)
 		return
@@ -220,29 +220,29 @@ func (l *listenerConfig) InitRtcp(sc *core.StreamConfig) {
 		select {
 		case <-l.ctx.Done():
 			log.Printf("InitRtcp, sn: %s, ctx.Done()", sn)
-			ListenUDPMap[sn].rtcpConn.Close()
+			updSourceMap[sn].rtcpConn.Close()
 			return
 		default:
 			p := make([]byte, 1200)
-			rtcpN, _, err := ListenUDPMap[sn].rtcpConn.ReadFrom(p)
+			rtcpN, _, err := updSourceMap[sn].rtcpConn.ReadFrom(p)
 			if err != nil {
 				log.Printf("InitRtcp, sn: %s, ReadFrom error: %s", sn, err)
 				break
 			}
-			packet, header, err := rtcp.Unmarshal(p[:rtcpN])
-
-			switch header.Type {
-			case rtcp.TypeSenderReport:
-				log.Printf("InitRtcp << \n%v\n", packet)
-
-			default:
-				log.Printf("InitRtcp, sn: %s, nieobsługiwany typ pakietu RTCP: %d", sn, packet.Header().Type)
+			packets, err := rtcp.Unmarshal(p[:rtcpN])
+			for packet := range packets {
+				log.Printf("InitRtcp << packet%v", packet)
+			}
+			for _, config := range ReceiversWebrtcMap {
+				if config.actualChannel == sn {
+					config.peerConnection.WriteRTCP(packets)
+				}
 			}
 
 		}
 	}
 }
-func (l *listenerConfig) InitRtp(sc *core.StreamConfig) {
+func (l *updSource) InitRtp(sc *core.StreamConfig) {
 	defer func() {
 		l.wg.Done()
 	}()
@@ -252,7 +252,7 @@ func (l *listenerConfig) InitRtp(sc *core.StreamConfig) {
 	var port = ini.SCMap[sn].PortIn
 	var broadcast string = "Broadcast"
 
-	ListenUDPMap[sn].rtpConn, err = net.ListenUDP("udp", &net.UDPAddr{IP: net.ParseIP(IPIn), Port: port})
+	updSourceMap[sn].rtpConn, err = net.ListenUDP("udp", &net.UDPAddr{IP: net.ParseIP(IPIn), Port: port})
 	if err != nil {
 		log.Printf("InitRtp, sn: %s, IPIn: %s, port: %d, err: %s", sn, IPIn, port, err)
 		return
@@ -262,12 +262,12 @@ func (l *listenerConfig) InitRtp(sc *core.StreamConfig) {
 		select {
 		case <-l.ctx.Done():
 			log.Printf("rtpConn, sn: %s, ctx.Done()", sn)
-			ListenUDPMap[sn].rtpConn.Close()
+			updSourceMap[sn].rtpConn.Close()
 			return
 		default:
 			packet := make([]byte, 1200)
 			rtpPacket := &rtp.Packet{}
-			n, _, err := ListenUDPMap[sn].rtpConn.ReadFrom(packet)
+			n, _, err := updSourceMap[sn].rtpConn.ReadFrom(packet)
 			if err != nil {
 				log.Printf("InitRtp, sn: %s, ReadFrom error: %s", sn, err)
 				break
@@ -299,7 +299,7 @@ func (l *listenerConfig) InitRtp(sc *core.StreamConfig) {
 	}
 }
 
-func (l *listenerConfig) localRTPofferer(sn string, offerSDP chan<- string, answerSDP <-chan string, iceOffer chan<- *webrtc.ICECandidate, iceAnswer <-chan *webrtc.ICECandidate) {
+func (l *updSource) localRTPofferer(sn string, offerSDP chan<- string, answerSDP <-chan string, iceOffer chan<- *webrtc.ICECandidate, iceAnswer <-chan *webrtc.ICECandidate) {
 	defer func() {
 		l.wg.Done()
 	}()
@@ -413,7 +413,7 @@ func (l *listenerConfig) localRTPofferer(sn string, offerSDP chan<- string, answ
 		}
 	}
 }
-func (l *listenerConfig) localRTPanswerer(sn string, offerSDP <-chan string, answerSDP chan<- string, iceOffer <-chan *webrtc.ICECandidate, iceAnswer chan<- *webrtc.ICECandidate) {
+func (l *updSource) localRTPanswerer(sn string, offerSDP <-chan string, answerSDP chan<- string, iceOffer <-chan *webrtc.ICECandidate, iceAnswer chan<- *webrtc.ICECandidate) {
 	defer func() {
 		l.wg.Done()
 	}()
@@ -603,6 +603,7 @@ func registerReceiver(client *wss.Client) {
 	remoteP2PQueueMap[sn] = new(remoteP2PQueueConfig)
 	remoteP2PQueueMap[sn].offer = make(chan offerConfig)
 	remoteP2PQueueMap[sn].ice = make(chan iceConfig, 20)
+
 	ReceiversWebrtcMap[sn] = new(SourceToWebrtcConfig)
 	ReceiversWebrtcMap[sn].mediaEngine = &webrtc.MediaEngine{}
 	ReceiversWebrtcMap[sn].settingEngine = &webrtc.SettingEngine{}
@@ -742,7 +743,7 @@ func main() {
 	flag.Parse()
 
 	codecMap = make(map[string]Codecs)
-	ListenUDPMap = make(map[string]*listenerConfig)
+	updSourceMap = make(map[string]*updSource)
 	SourceToWebrtcMap = make(map[string]*SourceToWebrtcConfig)
 	ReceiversWebrtcMap = make(map[string]*SourceToWebrtcConfig)
 	remoteP2PQueueMap = make(map[string]*remoteP2PQueueConfig)
