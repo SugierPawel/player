@@ -4,6 +4,7 @@
 package main
 
 import (
+	"context"
 	"encoding/base64"
 	"encoding/json"
 	"flag"
@@ -17,7 +18,6 @@ import (
 	"github.com/pion/rtp"
 	"github.com/pion/rtp/codecs"
 	"github.com/pion/webrtc/v3"
-	"github.com/pion/webrtc/v3/pkg/media"
 	"github.com/pion/webrtc/v3/pkg/media/samplebuilder"
 	"github.com/pions/webrtc/pkg/rtcp"
 
@@ -41,7 +41,11 @@ var codecMap map[string]Codecs
 
 type listenerConfig struct {
 	CloseChan chan bool
-	Conn      *net.UDPConn
+	rtcpConn  *net.UDPConn
+	rtpConn   *net.UDPConn
+	wg        *sync.WaitGroup
+	ctx       context.Context
+	cancel    context.CancelFunc
 }
 type iceConfig struct {
 	client *wss.Client
@@ -67,8 +71,6 @@ type SourceToWebrtcConfig struct {
 	remoteDescription    *webrtc.SessionDescription
 	actualChannel        string
 	ssrc                 webrtc.SSRC
-	offererExitChan      chan bool
-	answererExitChan     chan bool
 	receiverExitChan     chan bool
 }
 type JsMessage struct {
@@ -77,7 +79,6 @@ type JsMessage struct {
 	Channel string `json:"channel"`
 }
 type TracksDirectionConfig struct {
-	syncMap      map[string]chan *media.Sample
 	depacketizer map[string]rtp.Depacketizer
 	sampleBuffer map[string]*samplebuilder.SampleBuilder
 	kind         map[string]*webrtc.TrackLocalStaticSample
@@ -128,22 +129,23 @@ func AddRTPsource(sc *core.StreamConfig) {
 	TracksMap[sn].Direction = make(map[string]*TracksDirectionConfig)
 	ListenUDPMap[sn] = new(listenerConfig)
 	SourceToWebrtcMap[sn] = new(SourceToWebrtcConfig)
-	SourceToWebrtcMap[sn].offererExitChan = make(chan bool)
-	SourceToWebrtcMap[sn].answererExitChan = make(chan bool)
 
 	initLocalTracks(sc, "RTP")
 	initLocalTracks(sc, "Broadcast")
 
-	go initListenUDP(sc)
+	ListenUDPMap[sn].wg = &sync.WaitGroup{}
+	ListenUDPMap[sn].ctx, ListenUDPMap[sn].cancel = context.WithCancel(context.Background())
+
+	go ListenUDPMap[sn].InitRtcp(sc)
+	go ListenUDPMap[sn].InitRtp(sc)
 
 	sdp1 := make(chan string, 1)
 	sdp2 := make(chan string, 1)
-
 	ice1 := make(chan *webrtc.ICECandidate, 1)
 	ice2 := make(chan *webrtc.ICECandidate, 1)
 
-	go localRTPofferer(sn, sdp1, sdp2, ice1, ice2)
-	go localRTPanswerer(sn, sdp1, sdp2, ice1, ice2)
+	go ListenUDPMap[sn].localRTPofferer(sn, sdp1, sdp2, ice1, ice2)
+	go ListenUDPMap[sn].localRTPanswerer(sn, sdp1, sdp2, ice1, ice2)
 
 	jsonStr, _ := json.Marshal(sc)
 	data, _ := json.Marshal(&JsMessage{
@@ -156,12 +158,6 @@ func AddRTPsource(sc *core.StreamConfig) {
 func DelRTPsource(sc *core.StreamConfig) {
 	log.Printf("DelRTPsource: %+v\n", sc)
 	sn := sc.StreamName
-	select {
-	case <-ListenUDPMap[sn].CloseChan:
-	default:
-		ListenUDPMap[sn].CloseChan <- true
-	}
-	delete(TracksMap, sn)
 
 	jsonStr, _ := json.Marshal(sc)
 	data, _ := json.Marshal(&JsMessage{
@@ -169,6 +165,13 @@ func DelRTPsource(sc *core.StreamConfig) {
 		Data:    base64.URLEncoding.EncodeToString([]byte(jsonStr)),
 	})
 	wssHub.Broadcast <- data
+
+	ListenUDPMap[sn].wg.Add(4)
+	ListenUDPMap[sn].cancel()
+	ListenUDPMap[sn].wg.Wait()
+
+	delete(TracksMap, sn)
+	delete(ListenUDPMap, sn)
 }
 
 func initLocalTracks(sc *core.StreamConfig, direction string) {
@@ -179,10 +182,8 @@ func initLocalTracks(sc *core.StreamConfig, direction string) {
 	TracksMap[sn].Direction[direction].kind = make(map[string]*webrtc.TrackLocalStaticSample)
 	TracksMap[sn].Direction[direction].depacketizer = make(map[string]rtp.Depacketizer)
 	TracksMap[sn].Direction[direction].sampleBuffer = make(map[string]*samplebuilder.SampleBuilder)
-	//TracksMap[sn].Direction[direction].syncMap = make(map[string]chan *media.Sample, 1)
 
 	for kind := range codecMap {
-		//TracksMap[sn].Direction[direction].syncMap[kind] = make(chan *media.Sample)
 		TracksMap[sn].Direction[direction].depacketizer[kind] = codecMap[kind].dep
 		TracksMap[sn].Direction[direction].sampleBuffer[kind] = samplebuilder.New(
 			uint16(codecMap[kind].PacketMaxLate),
@@ -197,75 +198,87 @@ func initLocalTracks(sc *core.StreamConfig, direction string) {
 		}
 	}
 }
-func initListenUDP(sc *core.StreamConfig) {
+
+func (l *listenerConfig) InitRtcp(sc *core.StreamConfig) {
+	defer func() {
+		l.wg.Done()
+	}()
 	sn := sc.StreamName
 	var err error
-	var broadcast string = "Broadcast"
-
 	IPIn := ini.SCMap[sn].IPIn
 	var port = ini.SCMap[sn].PortIn
-
-	//ListenUDPMap[sn].CloseChan = make(chan bool, 1)
-	defer func() {
-		select {
-		case <-ListenUDPMap[sn].CloseChan:
-		default:
-			close(ListenUDPMap[sn].CloseChan)
-		}
-		select {
-		case <-SourceToWebrtcMap[sn].offererExitChan:
-			SourceToWebrtcMap[sn].offererExitChan <- true
-		case <-SourceToWebrtcMap[sn].answererExitChan:
-			SourceToWebrtcMap[sn].answererExitChan <- true
-		}
-	}()
 	rtcpPort := port + 1
 	//rtcpVideoFBPort := port + 2
 	//rtcpAudiooFBPort := port + 3
 
-	rtcpConn, err := net.ListenUDP("udp", &net.UDPAddr{IP: net.ParseIP(IPIn), Port: rtcpPort})
+	ListenUDPMap[sn].rtcpConn, err = net.ListenUDP("udp", &net.UDPAddr{IP: net.ParseIP(IPIn), Port: rtcpPort})
 	if err != nil {
-		log.Printf("initListenUDP - rtcpConn, sn: %s, IPIn: %s, port: %d, err: %s", sn, IPIn, rtcpPort, err)
+		log.Printf("InitRtcp, sn: %s, IPIn: %s, port: %d, err: %s", sn, IPIn, rtcpPort, err)
 		return
 	}
-	ListenUDPMap[sn].Conn, err = net.ListenUDP("udp", &net.UDPAddr{IP: net.ParseIP(IPIn), Port: port})
+	for {
+		select {
+		case <-l.ctx.Done():
+			log.Printf("InitRtcp, sn: %s, ctx.Done()", sn)
+			ListenUDPMap[sn].rtcpConn.Close()
+			return
+		default:
+			packet := make([]byte, 1200)
+			rtcpPacket := &rtcp.RawPacket{}
+			rtcpN, _, err := ListenUDPMap[sn].rtcpConn.ReadFrom(packet)
+			if err != nil {
+				log.Printf("InitRtcp, sn: %s, ReadFrom error: %s", sn, err)
+				break
+			}
+			if err = rtcpPacket.Unmarshal(packet[:rtcpN]); err != nil {
+				log.Printf("InitRtcp, sn: %s, rtcpPacket.Unmarshal error: %s", sn, err)
+				break
+			}
+			log.Printf("InitRtcp <<<< n: %d, pt: %s, ssrc: %d", rtcpN, rtcpPacket.Header().Type, rtcpPacket.DestinationSSRC())
+
+			switch rtcpPacket.Header().Type {
+			case rtcp.TypeSenderReport:
+				log.Printf("InitRtcp <<!!!!!!!!!!!!!!!!!!!!!!!!")
+
+			default:
+				log.Printf("InitRtcp, sn: %s, nieobsługiwany typ pakietu RTCP: %d", sn, rtcpPacket.Header().Type)
+			}
+
+		}
+	}
+}
+func (l *listenerConfig) InitRtp(sc *core.StreamConfig) {
+	defer func() {
+		l.wg.Done()
+	}()
+	sn := sc.StreamName
+	var err error
+	IPIn := ini.SCMap[sn].IPIn
+	var port = ini.SCMap[sn].PortIn
+	var broadcast string = "Broadcast"
+
+	ListenUDPMap[sn].rtpConn, err = net.ListenUDP("udp", &net.UDPAddr{IP: net.ParseIP(IPIn), Port: port})
 	if err != nil {
-		log.Printf("initListenUDP, sn: %s, IPIn: %s, port: %d, err: %s", sn, IPIn, port, err)
+		log.Printf("InitRtp, sn: %s, IPIn: %s, port: %d, err: %s", sn, IPIn, port, err)
 		return
 	}
 	var kind string
 	for {
 		select {
-		//case neighborSample := <-TracksMap[sn].Direction[broadcast].syncMap[kind]:
-		//	log.Printf("initListenUDP <- syncChan, neighbor kind: %s, PacketTimestamp: %d, PrevDroppedPackets: %d", kind, neighborSample.PacketTimestamp, neighborSample.PrevDroppedPackets)
-		case <-ListenUDPMap[sn].CloseChan:
-			ListenUDPMap[sn].Conn.Close()
-			rtcpConn.Close()
-			delete(ListenUDPMap, sn)
+		case <-l.ctx.Done():
+			log.Printf("rtpConn, sn: %s, ctx.Done()", sn)
+			ListenUDPMap[sn].rtpConn.Close()
 			return
 		default:
-			_packet := make([]byte, 1200)
-			rtcpPacket := &rtcp.RawPacket{}
-			rtcpN, _, err := rtcpConn.ReadFrom(_packet)
-			if err != nil {
-				log.Printf("initListenUDP - rtcpConn, sn: %s, ReadFrom error: %s", sn, err)
-				break
-			}
-			if err = rtcpPacket.Unmarshal(_packet[:rtcpN]); err != nil {
-				log.Printf("initListenUDP - rtcpConn, sn: %s, rtcpPacket.Unmarshal error: %s", sn, err)
-				break
-			}
-			log.Printf("initListenUDP - rtcpConn <<<< n: %d, pt: %s, ssrc: %d", rtcpN, rtcpPacket.Header().Type.String(), rtcpPacket.DestinationSSRC())
-
 			packet := make([]byte, 1200)
 			rtpPacket := &rtp.Packet{}
-			n, _, err := ListenUDPMap[sn].Conn.ReadFrom(packet)
+			n, _, err := ListenUDPMap[sn].rtpConn.ReadFrom(packet)
 			if err != nil {
-				log.Printf("initListenUDP, sn: %s, ReadFrom error: %s", sn, err)
+				log.Printf("InitRtp, sn: %s, ReadFrom error: %s", sn, err)
 				break
 			}
 			if err = rtpPacket.Unmarshal(packet[:n]); err != nil {
-				log.Printf("initListenUDP, sn: %s, rtpPacket.Unmarshal error: %s", sn, err)
+				log.Printf("InitRtp, sn: %s, rtpPacket.Unmarshal error: %s", sn, err)
 				break
 			}
 			switch rtpPacket.Header.PayloadType {
@@ -274,25 +287,27 @@ func initListenUDP(sc *core.StreamConfig) {
 			case 97:
 				kind = "audio"
 			}
-			//log.Printf("initListenUDP <<<< kind: %s, n: %d, pt: %d", kind, n, rtpPacket.Header.PayloadType)
+			//log.Printf("InitRtp <<<< kind: %s, n: %d, pt: %d", kind, n, rtpPacket.Header.PayloadType)
 			TracksMap[sn].Direction[broadcast].sampleBuffer[kind].Push(rtpPacket)
 			for {
 				sample := TracksMap[sn].Direction[broadcast].sampleBuffer[kind].Pop()
 				if sample == nil {
-					//log.Printf("initListenUDP << nie gotowy...., kind: %s", kind)
+					//log.Printf("InitRtp << nie gotowy...., kind: %s", kind)
 					break
 				}
-				//TracksMap[sn].Direction[broadcast].syncMap[oppositeKind] <- sample
-				//log.Printf("initListenUDP >> WriteSample!!!, kind: %s, ts: %d, dropped: %d", kind, sample.PacketTimestamp, sample.PrevDroppedPackets)
+				//log.Printf("InitRtp >> WriteSample!!!, kind: %s, ts: %d, dropped: %d", kind, sample.PacketTimestamp, sample.PrevDroppedPackets)
 				if err := TracksMap[sn].Direction[broadcast].kind[kind].WriteSample(*sample); err != nil {
-					log.Printf("initListenUDP, kind: %s, sn: %s, WriteSample error: %s", kind, sn, err)
+					log.Printf("InitRtp, kind: %s, sn: %s, WriteSample error: %s", kind, sn, err)
 				}
 			}
 		}
 	}
 }
 
-func localRTPofferer(sn string, offerSDP chan<- string, answerSDP <-chan string, iceOffer chan<- *webrtc.ICECandidate, iceAnswer <-chan *webrtc.ICECandidate) {
+func (l *listenerConfig) localRTPofferer(sn string, offerSDP chan<- string, answerSDP <-chan string, iceOffer chan<- *webrtc.ICECandidate, iceAnswer <-chan *webrtc.ICECandidate) {
+	defer func() {
+		l.wg.Done()
+	}()
 	var fName string = "localRTPofferer"
 	var err error
 
@@ -392,18 +407,21 @@ func localRTPofferer(sn string, offerSDP chan<- string, answerSDP <-chan string,
 
 	for {
 		select {
+		case <-l.ctx.Done():
+			log.Printf("localRTPofferer, sn: %s, ctx.Done()", sn)
+			return
 		case ice := <-iceAnswer:
 			err = SourceToWebrtcMap[sn].peerConnection.AddICECandidate(ice.ToJSON())
 			check(fName, sn, err)
-		case <-SourceToWebrtcMap[sn].offererExitChan:
-			close(SourceToWebrtcMap[sn].offererExitChan)
-			return
 		default:
 			<-time.After(sleepTime)
 		}
 	}
 }
-func localRTPanswerer(sn string, offerSDP <-chan string, answerSDP chan<- string, iceOffer <-chan *webrtc.ICECandidate, iceAnswer chan<- *webrtc.ICECandidate) {
+func (l *listenerConfig) localRTPanswerer(sn string, offerSDP <-chan string, answerSDP chan<- string, iceOffer <-chan *webrtc.ICECandidate, iceAnswer chan<- *webrtc.ICECandidate) {
+	defer func() {
+		l.wg.Done()
+	}()
 	var fName string = "localRTPanswerer"
 	var err error
 	SourceToWebrtcMap[sn].answerPeerConnection, err = webrtc.NewPeerConnection(webrtcConfiguration)
@@ -453,12 +471,12 @@ func localRTPanswerer(sn string, offerSDP <-chan string, answerSDP chan<- string
 
 	for {
 		select {
+		case <-l.ctx.Done():
+			log.Printf("localRTPanswerer, sn: %s, ctx.Done()", sn)
+			return
 		case ice := <-iceOffer:
 			err = SourceToWebrtcMap[sn].answerPeerConnection.AddICECandidate(ice.ToJSON())
 			check(fName, sn, err)
-		case <-SourceToWebrtcMap[sn].answererExitChan:
-			close(SourceToWebrtcMap[sn].answererExitChan)
-			return
 		default:
 			<-time.After(sleepTime)
 		}
