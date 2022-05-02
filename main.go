@@ -12,6 +12,7 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -238,10 +239,17 @@ func (l *updSource) InitRtcp(sc *core.StreamConfig) {
 			//packets, err := rtcp.Unmarshal(p[:rtcpN])
 			//pas := rtcp.Packet
 
-			sr := rtcp.SenderReport{}
+			sr := &rtcp.SenderReport{}
 			sr.Unmarshal(p[:rtcpN])
 			//sr.SSRC
 
+			var kind string
+			if fmt.Sprint(sr.SSRC) == l.ssrcMap["video"] {
+				kind = "video"
+			} else if fmt.Sprint(sr.SSRC) == l.ssrcMap["audio"] {
+				kind = "audio"
+			}
+			//sr.SSRC = uint32(ReceiversWebrtcMap[])
 			log.Printf("!!!!!!!!InitRtcp << sn: %s, %v", sn, sr.SSRC)
 			log.Printf("!!!!!!!!<< InitRtcp << sn: %s, video: %s, audio: %s", sn, l.ssrcMap["video"], l.ssrcMap["audio"])
 
@@ -250,10 +258,16 @@ func (l *updSource) InitRtcp(sc *core.StreamConfig) {
 				//packets[n] = packet.DestinationSSRC()
 			}*/
 
-			for _, config := range ReceiversWebrtcMap {
+			for receiverSN, config := range ReceiversWebrtcMap {
 				if config.actualChannel == sn {
 
-					err = config.peerConnection.WriteRTCP([]rtcp.Packet{&sr})
+					intVar, _ := strconv.Atoi(ReceiversWebrtcMap[receiverSN].ssrcMap[kind])
+					var ssrc uint32 = uint32(intVar)
+					sr.SSRC = ssrc
+
+					log.Printf(">> InitRtcp >> sn: %s, kind: %s, ssrc: %d/%s", sn, kind, sr.SSRC, l.ssrcMap[kind])
+
+					err = config.peerConnection.WriteRTCP([]rtcp.Packet{sr})
 					if err != nil {
 						log.Printf("InitRtcp, sn: %s, WriteRTCP error: %s", sn, err)
 					}
