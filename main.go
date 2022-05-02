@@ -253,11 +253,11 @@ func (l *updSource) InitRtcp(sc *core.StreamConfig) {
 			for receiverSN, config := range ReceiversWebrtcMap {
 				if config.actualChannel == sn {
 
+					log.Printf(">> InitRtcp >> sn: %s, kind: %s, ssrc: %d/%s", sn, kind, sr.SSRC, ReceiversWebrtcMap[receiverSN].ssrcMap[kind])
+
 					intVar, _ := strconv.Atoi(ReceiversWebrtcMap[receiverSN].ssrcMap[kind])
 					var ssrc uint32 = uint32(intVar)
 					sr.SSRC = ssrc
-
-					log.Printf(">> InitRtcp >> sn: %s, kind: %s, ssrc: %d/%s", sn, kind, sr.SSRC, l.ssrcMap[kind])
 
 					err = config.peerConnection.WriteRTCP([]rtcp.Packet{sr})
 					if err != nil {
