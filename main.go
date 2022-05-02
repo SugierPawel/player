@@ -217,7 +217,7 @@ func (l *updSource) InitRtcp(sc *core.StreamConfig) {
 	//rtcpVideoFBPort := port + 2
 	//rtcpAudiooFBPort := port + 3
 
-	updSourceMap[sn].rtcpConn, err = net.ListenUDP("udp", &net.UDPAddr{IP: net.ParseIP(IPIn), Port: rtcpPort})
+	l.rtcpConn, err = net.ListenUDP("udp", &net.UDPAddr{IP: net.ParseIP(IPIn), Port: rtcpPort})
 	if err != nil {
 		log.Printf("InitRtcp, sn: %s, IPIn: %s, port: %d, err: %s", sn, IPIn, rtcpPort, err)
 		return
@@ -226,11 +226,11 @@ func (l *updSource) InitRtcp(sc *core.StreamConfig) {
 		select {
 		case <-l.ctx.Done():
 			log.Printf("InitRtcp, sn: %s, ctx.Done()", sn)
-			updSourceMap[sn].rtcpConn.Close()
+			l.rtcpConn.Close()
 			return
 		default:
 			p := make([]byte, 1200)
-			rtcpN, _, err := updSourceMap[sn].rtcpConn.ReadFrom(p)
+			rtcpN, _, err := l.rtcpConn.ReadFrom(p)
 			if err != nil {
 				log.Printf("InitRtcp, sn: %s, ReadFrom error: %s", sn, err)
 				break
@@ -243,6 +243,7 @@ func (l *updSource) InitRtcp(sc *core.StreamConfig) {
 			//sr.SSRC
 
 			log.Printf("!!!!!!!!InitRtcp << sn: %s, %v", sn, sr.SSRC)
+			log.Printf("!!!!!!!!<< InitRtcp << sn: %s, video: %s, audio: %s", sn, l.ssrcMap["video"], l.ssrcMap["audio"])
 
 			/*for n, packet := range packets {
 				log.Printf("InitRtcp << sn: %s, n: %d, SSRC: %d", sn, n, packet.DestinationSSRC())
@@ -295,7 +296,7 @@ func (l *updSource) InitRtp(sc *core.StreamConfig) {
 	var port = ini.SCMap[sn].PortIn
 	var broadcast string = "Broadcast"
 
-	updSourceMap[sn].rtpConn, err = net.ListenUDP("udp", &net.UDPAddr{IP: net.ParseIP(IPIn), Port: port})
+	l.rtpConn, err = net.ListenUDP("udp", &net.UDPAddr{IP: net.ParseIP(IPIn), Port: port})
 	if err != nil {
 		log.Printf("InitRtp, sn: %s, IPIn: %s, port: %d, err: %s", sn, IPIn, port, err)
 		return
@@ -305,12 +306,12 @@ func (l *updSource) InitRtp(sc *core.StreamConfig) {
 		select {
 		case <-l.ctx.Done():
 			log.Printf("rtpConn, sn: %s, ctx.Done()", sn)
-			updSourceMap[sn].rtpConn.Close()
+			l.rtpConn.Close()
 			return
 		default:
 			packet := make([]byte, 1200)
 			rtpPacket := &rtp.Packet{}
-			n, _, err := updSourceMap[sn].rtpConn.ReadFrom(packet)
+			n, _, err := l.rtpConn.ReadFrom(packet)
 			if err != nil {
 				log.Printf("InitRtp, sn: %s, ReadFrom error: %s", sn, err)
 				break
