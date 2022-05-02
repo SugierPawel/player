@@ -137,7 +137,7 @@ func AddRTPsource(sc *core.StreamConfig) {
 	updSourceMap[sn].ctx, updSourceMap[sn].cancel = context.WithCancel(context.Background())
 
 	go updSourceMap[sn].InitRtcp(sc)
-	//go updSourceMap[sn].InitRtp(sc)
+	go updSourceMap[sn].InitRtp(sc)
 
 	sdp1 := make(chan string, 1)
 	sdp2 := make(chan string, 1)
@@ -237,11 +237,12 @@ func (l *updSource) InitRtcp(sc *core.StreamConfig) {
 				if config.actualChannel == sn {
 
 					for _, sender := range config.peerConnection.GetSenders() {
+
 						s, err := sender.Transport().WriteRTCP(packets)
 						if err != nil {
 							log.Printf("InitRtcp << błąd wysłania do rec: %s, err: %s", rec, err)
 						} else {
-							log.Printf("InitRtcp << wysłano: %d, do rec: %s", s, rec)
+							log.Printf("InitRtcp << wysłano: %d, do rec: %s, sender.Track().StreamID(): %s", s, rec, sender.Track().StreamID())
 						}
 
 					}
