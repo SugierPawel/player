@@ -80,7 +80,7 @@ type JsMessage struct {
 	Channel string `json:"channel"`
 }
 type TracksDirectionConfig struct {
-	ssrcMap      map[string]string
+	ssrcMap      map[string]uint32
 	depacketizer map[string]rtp.Depacketizer
 	sampleBuffer map[string]*samplebuilder.SampleBuilder
 	kind         map[string]*webrtc.TrackLocalStaticSample
@@ -181,7 +181,7 @@ func initLocalTracks(sc *core.StreamConfig, direction string) {
 	var err error
 
 	TracksMap[sn].Direction[direction] = new(TracksDirectionConfig)
-	TracksMap[sn].Direction[direction].ssrcMap = make(map[string]string)
+	TracksMap[sn].Direction[direction].ssrcMap = make(map[string]uint32)
 	TracksMap[sn].Direction[direction].kind = make(map[string]*webrtc.TrackLocalStaticSample)
 	TracksMap[sn].Direction[direction].depacketizer = make(map[string]rtp.Depacketizer)
 	TracksMap[sn].Direction[direction].sampleBuffer = make(map[string]*samplebuilder.SampleBuilder)
@@ -235,6 +235,7 @@ func (l *updSource) InitRtcp(sc *core.StreamConfig) {
 			packets, err := rtcp.Unmarshal(p[:rtcpN])
 			for n, packet := range packets {
 				log.Printf("InitRtcp << sn: %s, n: %d, SSRC: %d", sn, n, packet.DestinationSSRC())
+				//packets[n] = packet.DestinationSSRC()
 			}
 			for rec, config := range ReceiversWebrtcMap {
 				if config.actualChannel == sn {
@@ -750,9 +751,9 @@ func registerReceiver(client *wss.Client) {
 				}
 				if strings.Index(line, "a=ssrc:") > -1 {
 					if count == 0 {
-						TracksMap[oc.channel].Direction["Broadcast"].ssrcMap["video"] = line[8:strings.Index(line, " ")]
+						//TracksMap[oc.channel].Direction["Broadcast"].ssrcMap["video"] = line[8:strings.Index(line, " ")]
 					} else if count == 4 {
-						TracksMap[oc.channel].Direction["Broadcast"].ssrcMap["audio"] = line[8:strings.Index(line, " ")]
+						//TracksMap[oc.channel].Direction["Broadcast"].ssrcMap["audio"] = line[8:strings.Index(line, " ")]
 					}
 					count++
 				}
