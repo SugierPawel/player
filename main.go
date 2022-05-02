@@ -232,9 +232,6 @@ func (l *updSource) InitRtcp(sc *core.StreamConfig) {
 			packets, err := rtcp.Unmarshal(p[:rtcpN])
 			for _, packet := range packets {
 				log.Printf("InitRtcp << SSRC: %d", packet.DestinationSSRC())
-				log.Printf("InitRtcp << a packet: %v", packet)
-				packet.Unmarshal(p[:rtcpN])
-				log.Printf("InitRtcp << b packet: %v", packet)
 			}
 			//
 			for rec, config := range ReceiversWebrtcMap {
