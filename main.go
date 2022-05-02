@@ -775,9 +775,9 @@ func registerReceiver(client *wss.Client) {
 				}
 				if strings.Index(line, "a=ssrc:") > -1 {
 					if count == 0 {
-						ReceiversWebrtcMap[sn].ssrcMap["video"] = line[8:strings.Index(line, " ")]
+						ReceiversWebrtcMap[sn].ssrcMap["video"] = line[7:strings.Index(line, " ")]
 					} else if count == 4 {
-						ReceiversWebrtcMap[sn].ssrcMap["audio"] = line[8:strings.Index(line, " ")]
+						ReceiversWebrtcMap[sn].ssrcMap["audio"] = line[7:strings.Index(line, " ")]
 						break
 					}
 					count++
