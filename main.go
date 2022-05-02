@@ -40,12 +40,11 @@ var remoteP2PQueueMap map[string]*remoteP2PQueueConfig
 var codecMap map[string]Codecs
 
 type listenerConfig struct {
-	CloseChan chan bool
-	rtcpConn  *net.UDPConn
-	rtpConn   *net.UDPConn
-	wg        *sync.WaitGroup
-	ctx       context.Context
-	cancel    context.CancelFunc
+	rtcpConn *net.UDPConn
+	rtpConn  *net.UDPConn
+	wg       *sync.WaitGroup
+	ctx      context.Context
+	cancel   context.CancelFunc
 }
 type iceConfig struct {
 	client *wss.Client
@@ -234,11 +233,14 @@ func (l *listenerConfig) InitRtcp(sc *core.StreamConfig) {
 				log.Printf("InitRtcp, sn: %s, rtcpPacket.Unmarshal error: %s", sn, err)
 				break
 			}
-			log.Printf("InitRtcp <<<< n: %d, pt: %s, ssrc: %d", rtcpN, rtcpPacket.Header().Type, rtcpPacket.DestinationSSRC())
-
+			//log.Printf("InitRtcp <<<< n: %d, pt: %s, ssrc: %d", rtcpN, rtcpPacket.Header().Type, rtcpPacket.DestinationSSRC())
+			if err = rtcpPacket.Unmarshal(packet[:rtcpN]); err != nil {
+				log.Printf("InitRtcp, sn: %s, rtcpPacket.Unmarshal error: %s", sn, err)
+				break
+			}
 			switch rtcpPacket.Header().Type {
 			case rtcp.TypeSenderReport:
-				log.Printf("InitRtcp <<!!!!!!!!!!!!!!!!!!!!!!!!")
+				log.Printf("InitRtcp <<!!!!!!!!!!!!!!!!!!!!!!!! padding: \n%v\n, ssrc: \n%v\n, count: %d", rtcpPacket.Header().Padding, rtcpPacket.DestinationSSRC(), rtcpPacket.Header().Count)
 
 			default:
 				log.Printf("InitRtcp, sn: %s, nieobsługiwany typ pakietu RTCP: %d", sn, rtcpPacket.Header().Type)
