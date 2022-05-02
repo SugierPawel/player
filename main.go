@@ -11,6 +11,7 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 
@@ -734,7 +735,7 @@ func registerReceiver(client *wss.Client) {
 			answer, err := ReceiversWebrtcMap[sn].peerConnection.CreateAnswer(nil)
 			check(fName, sn, err)
 
-			for _, line := range answer.SDP {
+			for _, line := range strings.Split(answer.SDP, "\n") {
 				log.Printf(" >> ANSWER line: %v", line)
 			}
 
