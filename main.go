@@ -137,7 +137,7 @@ func AddRTPsource(sc *core.StreamConfig) {
 	updSourceMap[sn].ctx, updSourceMap[sn].cancel = context.WithCancel(context.Background())
 
 	go updSourceMap[sn].InitRtcp(sc)
-	go updSourceMap[sn].InitRtp(sc)
+	//go updSourceMap[sn].InitRtp(sc)
 
 	sdp1 := make(chan string, 1)
 	sdp2 := make(chan string, 1)
