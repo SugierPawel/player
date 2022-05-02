@@ -236,12 +236,8 @@ func (l *updSource) InitRtcp(sc *core.StreamConfig) {
 				log.Printf("InitRtcp, sn: %s, ReadFrom error: %s", sn, err)
 				break
 			}
-			//packets, err := rtcp.Unmarshal(p[:rtcpN])
-			//pas := rtcp.Packet
-
 			sr := &rtcp.SenderReport{}
 			sr.Unmarshal(p[:rtcpN])
-			//sr.SSRC
 
 			var kind string
 			if fmt.Sprint(sr.SSRC) == l.ssrcMap["video"] {
@@ -249,10 +245,6 @@ func (l *updSource) InitRtcp(sc *core.StreamConfig) {
 			} else if fmt.Sprint(sr.SSRC) == l.ssrcMap["audio"] {
 				kind = "audio"
 			}
-			//sr.SSRC = uint32(ReceiversWebrtcMap[])
-			log.Printf("!!!!!!!!InitRtcp << sn: %s, %v", sn, sr.SSRC)
-			log.Printf("!!!!!!!!<< InitRtcp << sn: %s, video: %s, audio: %s", sn, l.ssrcMap["video"], l.ssrcMap["audio"])
-
 			/*for n, packet := range packets {
 				log.Printf("InitRtcp << sn: %s, n: %d, SSRC: %d", sn, n, packet.DestinationSSRC())
 				//packets[n] = packet.DestinationSSRC()
