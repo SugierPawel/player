@@ -678,7 +678,7 @@ func registerReceiver(client *wss.Client) {
 		select {
 		case oc := <-remoteP2PQueueMap[sn].offer:
 			var err error
-			log.Printf(" << OFFER << %s, channel: %s", sn, oc.channel)
+			log.Printf(" << OFFER << %s, channel: %s", sn, oc.offer)
 
 			ReceiversWebrtcMap[sn].peerConnection.Close()
 			ReceiversWebrtcMap[sn].peerConnection, err = ReceiversWebrtcMap[sn].api.NewPeerConnection(receiverWebrtcConfiguration)
@@ -735,7 +735,7 @@ func registerReceiver(client *wss.Client) {
 			err = ReceiversWebrtcMap[sn].peerConnection.SetLocalDescription(answer)
 			check(fName, sn, err)
 
-			log.Printf(" >> ANSWER >> %s", answer.Type.String())
+			log.Printf(" >> ANSWER >> %s", answer.SDP)
 
 			data, _ := json.Marshal(&JsMessage{
 				Request: "answer",
