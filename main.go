@@ -302,7 +302,7 @@ func (l *updSource) InitRtp(sc *core.StreamConfig) {
 			case 97:
 				kind = "audio"
 			}
-			log.Printf("InitRtp <<<< kind: %s, n: %d, pt: %d, SSRC: %d", kind, n, rtpPacket.Header.PayloadType, rtpPacket.SSRC)
+			//log.Printf("InitRtp <<<< kind: %s, n: %d, pt: %d, SSRC: %d", kind, n, rtpPacket.Header.PayloadType, rtpPacket.SSRC)
 			TracksMap[sn].Direction[broadcast].sampleBuffer[kind].Push(rtpPacket)
 			for {
 				sample := TracksMap[sn].Direction[broadcast].sampleBuffer[kind].Pop()
@@ -678,7 +678,8 @@ func registerReceiver(client *wss.Client) {
 		select {
 		case oc := <-remoteP2PQueueMap[sn].offer:
 			var err error
-			log.Printf(" << OFFER << %s, channel: %s", sn, oc.offer)
+			//log.Printf(" << OFFER << %s, channel: %s", sn, oc.offer)
+			log.Printf(" << OFFER << %s, channel: %s", sn, oc.channel)
 
 			ReceiversWebrtcMap[sn].peerConnection.Close()
 			ReceiversWebrtcMap[sn].peerConnection, err = ReceiversWebrtcMap[sn].api.NewPeerConnection(receiverWebrtcConfiguration)
@@ -732,10 +733,16 @@ func registerReceiver(client *wss.Client) {
 
 			answer, err := ReceiversWebrtcMap[sn].peerConnection.CreateAnswer(nil)
 			check(fName, sn, err)
+
+			for _, line := range answer.SDP {
+				log.Printf(" >> ANSWER line: %v", line)
+			}
+
 			err = ReceiversWebrtcMap[sn].peerConnection.SetLocalDescription(answer)
 			check(fName, sn, err)
 
-			log.Printf(" >> ANSWER >> %s", answer.SDP)
+			//log.Printf(" >> ANSWER >> %s", answer.SDP)
+			log.Printf(" >> ANSWER >>")
 
 			data, _ := json.Marshal(&JsMessage{
 				Request: "answer",
