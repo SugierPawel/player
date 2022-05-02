@@ -255,10 +255,10 @@ func (l *updSource) InitRtcp(sc *core.StreamConfig) {
 
 					intVar, _ := strconv.Atoi(ReceiversWebrtcMap[receiverSN].ssrcMap[kind])
 					var ssrc uint32 = uint32(intVar)
-					preSSRC := sr.SSRC
+					//preSSRC := sr.SSRC
 					sr.SSRC = ssrc
 
-					log.Printf(">> InitRtcp >> sn: %s, kind: %s, ssrc: %d/%s, sr: \n%v\n", sn, kind, preSSRC, ReceiversWebrtcMap[receiverSN].ssrcMap[kind], sr)
+					//log.Printf(">> InitRtcp >> sn: %s, kind: %s, ssrc: %d/%s, sr: \n%v\n", sn, kind, preSSRC, ReceiversWebrtcMap[receiverSN].ssrcMap[kind], sr)
 
 					err = config.peerConnection.WriteRTCP([]rtcp.Packet{sr})
 					if err != nil {
@@ -806,8 +806,6 @@ func registerReceiver(client *wss.Client) {
 				}
 			}
 			answer.SDP = sdp*/
-
-			log.Printf(" >> *************** >> video: %s, audio: %s", ReceiversWebrtcMap[sn].ssrcMap["video"], ReceiversWebrtcMap[sn].ssrcMap["audio"])
 
 			err = ReceiversWebrtcMap[sn].peerConnection.SetLocalDescription(answer)
 			check(fName, sn, err)
