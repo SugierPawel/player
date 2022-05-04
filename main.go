@@ -93,20 +93,13 @@ type Codecs struct {
 	dep           rtp.Depacketizer
 }
 
-var receiverWebrtcConfiguration = webrtc.Configuration{
+var webrtcConfiguration = webrtc.Configuration{
 	ICEServers: []webrtc.ICEServer{
 		{
 			URLs:       []string{"turn:" + serverAddress + ":5900"},
 			Username:   "turnserver",
 			Credential: "turnserver",
 		},
-		{
-			URLs: []string{"stun:" + serverAddress + ":5900"},
-		},
-	},
-}
-var webrtcConfiguration = webrtc.Configuration{
-	ICEServers: []webrtc.ICEServer{
 		{
 			URLs: []string{"stun:" + serverAddress + ":5900"},
 		},
@@ -521,7 +514,7 @@ func registerReceiver(client *wss.Client) {
 			log.Printf(" << OFFER << %s, channel: %s", sn, oc.channel)
 
 			ReceiversWebrtcMap[sn].peerConnection.Close()
-			ReceiversWebrtcMap[sn].peerConnection, err = ReceiversWebrtcMap[sn].api.NewPeerConnection(receiverWebrtcConfiguration)
+			ReceiversWebrtcMap[sn].peerConnection, err = ReceiversWebrtcMap[sn].api.NewPeerConnection(webrtcConfiguration)
 			check(fName, sn, err)
 
 			ReceiversWebrtcMap[sn].peerConnection.OnConnectionStateChange(func(state webrtc.PeerConnectionState) {

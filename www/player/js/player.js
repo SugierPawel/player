@@ -592,8 +592,8 @@ var WebRTC = function (m)
     m.lastConnectTime = 0
     m.minConnectInterval = 15000
     m.connectTimeoutID = null;
-    m.rtcpcConfiguration = {iceServers:[]};
-    m._rtcpcConfiguration = {
+    m._rtcpcConfiguration = {iceServers:[]};
+    m.rtcpcConfiguration = {
         iceServers: [
             {
                 url: "turn:172.26.9.100:5900?transport=udp",
