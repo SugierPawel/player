@@ -207,7 +207,7 @@ func (l *updSource) InitRtcp(sc *core.StreamConfig) {
 			}
 			sr := &rtcp.SenderReport{}
 			sr.Unmarshal(p[:rtcpN])
-			log.Printf("InitRtcp << sr: %v", sr)
+
 			l.ssrcMutex.Lock()
 			var kind string
 			if fmt.Sprint(sr.SSRC) == l.ssrcMap["video"] {
