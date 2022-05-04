@@ -147,7 +147,7 @@ func DelRTPsource(sc *core.StreamConfig) {
 	})
 	wssHub.Broadcast <- data
 
-	updSourceMap[sn].wg.Add(4)
+	updSourceMap[sn].wg.Add(3)
 	updSourceMap[sn].cancel()
 	updSourceMap[sn].wg.Wait()
 
