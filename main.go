@@ -574,7 +574,7 @@ func registerReceiver(client *wss.Client) {
 						pkts, a, err := sender.ReadRTCP()
 						if err != nil {
 							log.Printf(">> sender >> kind: %s, a: %v, rtcpErr: %s", kind, a, err)
-							continue
+							break
 						}
 						for i, pkt := range pkts {
 							log.Printf(">> sender >> kind: %s, pkt[%d], SSRC: %d, pkt: %v", kind, i, pkt.DestinationSSRC(), pkt)
