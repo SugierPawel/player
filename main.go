@@ -222,11 +222,13 @@ func (l *updSource) InitRtcpReader(sc *core.StreamConfig) {
 
 			for receiverSN, config := range ReceiversWebrtcMap {
 				if config.actualChannel == sn {
-
 					intVar, _ := strconv.Atoi(ReceiversWebrtcMap[receiverSN].ssrcMap[kind])
 					var ssrc uint32 = uint32(intVar)
 					//preSSRC := sr.SSRC
 					sr.SSRC = ssrc
+
+					//errSend := peerConnection.WriteRTCP([]rtcp.Packet{&rtcp.PictureLossIndication{MediaSSRC: uint32(track.SSRC())}})
+
 					err = config.peerConnection.WriteRTCP([]rtcp.Packet{sr})
 					if err != nil {
 						log.Printf(">> InitRtcp >> sn: %s, WriteRTCP error: %s", sn, err)
@@ -267,11 +269,8 @@ func (l *updSource) InitRtcpReader(sc *core.StreamConfig) {
 							} else {
 								log.Printf("InitRtcp << wysłano: %d, do rec: %s, StreamID: %s", s, rec, sender.Track().StreamID())
 							}
-
 						}*/
-
 					//err = config.peerConnection.WriteRTCP(packets)
-
 				}
 			}
 
