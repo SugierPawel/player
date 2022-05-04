@@ -883,10 +883,6 @@ var WebRTC = function (m)
                 console.log(" >>> :: STATS ::", stats);
                 stats.forEach(function(v,c,d){
                     console.log(" >>> ::", v,c,d);
-                    stats.forEach(function(v,c,d){
-                        console.log(" >>>>>>>>>> ::", v,c,d);
-                        
-                    });
                 });
             });
         };
