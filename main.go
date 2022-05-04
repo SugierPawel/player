@@ -123,7 +123,7 @@ func AddRTPsource(sc *core.StreamConfig) {
 	updSourceMap[sn].ctx, updSourceMap[sn].cancel = context.WithCancel(context.Background())
 	updSourceMap[sn].ssrcMap = make(map[string]string)
 
-	//go updSourceMap[sn].InitRtcp(sc)
+	go updSourceMap[sn].InitRtcp(sc)
 	go updSourceMap[sn].InitRtpReader(sc)
 	go updSourceMap[sn].InitRtpWriter(sc, "video")
 	go updSourceMap[sn].InitRtpWriter(sc, "audio")
@@ -147,7 +147,7 @@ func DelRTPsource(sc *core.StreamConfig) {
 	})
 	wssHub.Broadcast <- data
 
-	updSourceMap[sn].wg.Add(3)
+	updSourceMap[sn].wg.Add(4)
 	updSourceMap[sn].cancel()
 	updSourceMap[sn].wg.Wait()
 
@@ -322,9 +322,9 @@ func (l *updSource) InitRtpReader(sc *core.StreamConfig) {
 				kind = "audio"
 			}
 			l.pktsChanMap[kind] <- rtpPacket
-			//l.ssrcMutex.Lock()
-			//l.ssrcMap[kind] = fmt.Sprint(rtpPacket.SSRC)
-			//l.ssrcMutex.Unlock()
+			l.ssrcMutex.Lock()
+			l.ssrcMap[kind] = fmt.Sprint(rtpPacket.SSRC)
+			l.ssrcMutex.Unlock()
 		}
 	}
 }
