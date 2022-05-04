@@ -345,7 +345,7 @@ func (l *updSource) InitRtpWriter(sc *core.StreamConfig, kind string) {
 					//log.Printf("InitRtp << nie gotowy...., kind: %s", kind)
 					break
 				}
-				//log.Printf("InitRtp >> WriteSample!!!, sn: %s, kind: %s, ts: %d, dropped: %d", sn, kind, sample.PacketTimestamp, sample.PrevDroppedPackets)
+				log.Printf("InitRtp >> WriteSample!!!, sn: %s, kind: %s, ts: %d, dropped: %d", sn, kind, sample.PacketTimestamp, sample.PrevDroppedPackets)
 				if sample.PrevDroppedPackets > 0 {
 					log.Printf("InitRtp >> WriteSample!!!, kind: %s, ts: %d, dropped: %d", kind, sample.PacketTimestamp, sample.PrevDroppedPackets)
 				}
