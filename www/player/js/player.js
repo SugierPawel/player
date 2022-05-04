@@ -664,7 +664,6 @@ var WebRTC = function (m)
             Log.Write(Log.ERROR, 'SetRemoteDescription', error);
         });
     };
-    
     m.AddIceCandidate = function(ice)
     {
         if (!m.rtcpc.remoteDescription)
@@ -689,14 +688,12 @@ var WebRTC = function (m)
        var audio_tracks = event.stream.getAudioTracks();
        Log.Write(Log.INFO, 'onAddStream - video_tracks.length: ' + video_tracks.length + ' - audio_tracks.length: ' + audio_tracks.length, event);
     };
-    
     m.onTrack = function(event)
     {
         Log.Write(Log.INFO, 'onTrack', event);
         m.stream = event.streams[0];
         Player.video.srcObject = event.streams[0];
     };
-    
     m.onConnectionStateChange = function(event)
     {
         switch (event.target.connectionState)
@@ -716,7 +713,6 @@ var WebRTC = function (m)
         };
         m.Open();
     };
-    
     m.onIceCandidate = function(event)
     {
         if (event.candidate == null) {
@@ -727,7 +723,6 @@ var WebRTC = function (m)
         Log.Write(Log.INFO, 'onIceCandidate', event.candidate.toJSON());
         Player.SendToRemote('ice', ice);
     };
-    
     m.onIceConnectionStateChange = function(event)
     {
         switch (event.target.iceConnectionState)
@@ -746,7 +741,6 @@ var WebRTC = function (m)
                 break;
         };
     };
-    
     m.onIceGatheringStateChange = function(event)
     {
         switch (event.target.iceGatheringState)
@@ -760,12 +754,10 @@ var WebRTC = function (m)
                 break;
         };
     };
-    
     m.onNegotiationNeeded = function(event)
     {
         Log.Write(Log.INFO, 'onNegotiationNeeded', m.info());
     };
-    
     m.onSignalingStateChange = function(event)
     {
         switch (event.target.signalingState)
@@ -800,7 +792,6 @@ var WebRTC = function (m)
         m.connectTimeoutID = null;
         m.Open();
     };
-    
     m.Open = function(force)
     {
         if (m.rtcpc && !force)
@@ -856,7 +847,6 @@ var WebRTC = function (m)
             Log.Write(Log.ERROR, "błąd wysyłania, err: " + error);
         });
     };
-    
     m.Close = function()
     {
         if (m.rtcpc)
@@ -881,6 +871,16 @@ var WebRTC = function (m)
         var c = ' - iceGatheringState: '  + (m.rtcpc ? m.rtcpc.iceGatheringState  : 'unknown');
         var d = ' - signalingState: '     + (m.rtcpc ? m.rtcpc.signalingState     : 'unknown');
         return a + b + c + d;
+    };
+    m.GetStats = function()
+    {
+        var receivers = m.rtcpc.getReceivers();
+        for (const r in receivers){
+            console.log(" >>> :: ", r, receivers[r].track.kind, receivers[r].transport);
+            receivers[r].getStats().then(function(stats) {
+                console.log(" >>> :: STATS ::", stats.packetsLost);
+            });
+        };
     };
     return m;
 };
