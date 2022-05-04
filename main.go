@@ -227,13 +227,13 @@ func (l *updSource) InitRtcp(sc *core.StreamConfig) {
 
 					intVar, _ := strconv.Atoi(ReceiversWebrtcMap[receiverSN].ssrcMap[kind])
 					var ssrc uint32 = uint32(intVar)
-					preSSRC := sr.SSRC
+					//preSSRC := sr.SSRC
 					sr.SSRC = ssrc
 					err = config.peerConnection.WriteRTCP([]rtcp.Packet{sr})
 					if err != nil {
 						log.Printf(">> InitRtcp >> sn: %s, WriteRTCP error: %s", sn, err)
 					}
-					log.Printf(">> InitRtcp >> sn: %s, kind: %s, preSSRC: %d, DestinationSSRC: %d", sn, kind, preSSRC, sr.DestinationSSRC())
+					//log.Printf(">> InitRtcp >> sn: %s, kind: %s, preSSRC: %d, DestinationSSRC: %d", sn, kind, preSSRC, sr.DestinationSSRC())
 					/*
 						for _, sender := range config.peerConnection.GetSenders() {
 							senderKind := sender.Track().Kind().String()
@@ -566,7 +566,7 @@ func registerReceiver(client *wss.Client) {
 			ReceiversWebrtcMap[sn].actualChannel = ""
 			changeChannel(client, oc.channel)
 
-			go func() {
+			/*go func() {
 				for {
 					for _, sender := range ReceiversWebrtcMap[sn].peerConnection.GetSenders() {
 						kind := sender.Track().Kind().String()
@@ -580,7 +580,7 @@ func registerReceiver(client *wss.Client) {
 						}
 					}
 				}
-			}()
+			}()*/
 			/*go func() {
 				for {
 					for _, receiver := range ReceiversWebrtcMap[sn].peerConnection.GetReceivers() {
