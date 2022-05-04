@@ -142,7 +142,7 @@ func AddRTPsource(sc *core.StreamConfig) {
 		}
 	}
 
-	go updSourceMap[sn].InitRtcp(sc)
+	go updSourceMap[sn].InitRtcpReader(sc)
 	go updSourceMap[sn].InitRtpReader(sc)
 	go updSourceMap[sn].InitRtpWriter(sc, "video")
 	go updSourceMap[sn].InitRtpWriter(sc, "audio")
@@ -173,7 +173,7 @@ func DelRTPsource(sc *core.StreamConfig) {
 	delete(updSourceMap, sn)
 }
 
-func (l *updSource) InitRtcp(sc *core.StreamConfig) {
+func (l *updSource) InitRtcpReader(sc *core.StreamConfig) {
 	defer func() {
 		l.wg.Done()
 	}()
@@ -345,7 +345,7 @@ func (l *updSource) InitRtpWriter(sc *core.StreamConfig, kind string) {
 				}
 				//WriteSample!!!, sn: %s, kind: %s, ts: %d, dropped: %d", sn, kind, sample.PacketTimestamp, sample.PrevDroppedPackets)
 				if sample.PrevDroppedPackets > 0 {
-					log.Printf("InitRtp >> WriteSample!!!, sn: %s, kind: %s, ts: %d, dropped: %d", sn, kind, sample.PacketTimestamp, sample.PrevDroppedPackets)
+					log.Printf("InitRtp >> WriteSample, sn: %s, kind: %s, ts: %d, dropped: %d", sn, kind, sample.PacketTimestamp, sample.PrevDroppedPackets)
 				}
 				if err := l.tracks[kind].WriteSample(*sample); err != nil {
 					log.Printf("InitRtp, kind: %s, sn: %s, WriteSample error: %s", kind, sn, err)
