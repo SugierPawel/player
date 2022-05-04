@@ -122,6 +122,27 @@ func AddRTPsource(sc *core.StreamConfig) {
 	updSourceMap[sn].wg = &sync.WaitGroup{}
 	updSourceMap[sn].ctx, updSourceMap[sn].cancel = context.WithCancel(context.Background())
 	updSourceMap[sn].ssrcMap = make(map[string]string)
+	updSourceMap[sn].pktsChanMap = make(map[string]chan *rtp.Packet)
+	updSourceMap[sn].pktsChanMap["audio"] = make(chan *rtp.Packet, 10)
+	updSourceMap[sn].pktsChanMap["video"] = make(chan *rtp.Packet, 10)
+	updSourceMap[sn].depacketizer = make(map[string]rtp.Depacketizer)
+	updSourceMap[sn].sampleBuffer = make(map[string]*samplebuilder.SampleBuilder)
+	updSourceMap[sn].tracks = make(map[string]*webrtc.TrackLocalStaticSample)
+	for kind := range codecMap {
+		updSourceMap[sn].depacketizer[kind] = codecMap[kind].dep
+		updSourceMap[sn].sampleBuffer[kind] = samplebuilder.New(
+			uint16(codecMap[kind].PacketMaxLate),
+			updSourceMap[sn].depacketizer[kind],
+			uint32(codecMap[kind].SampleRate))
+		var err error
+		updSourceMap[sn].tracks[kind], err = webrtc.NewTrackLocalStaticSample(
+			webrtc.RTPCodecCapability{MimeType: codecMap[kind].MimeType},
+			kind,
+			sc.ChannelName)
+		if err != nil {
+			log.Printf("InitRtpReader - NewTrackLocalStaticSample, kind: %s, error: %s", kind, err)
+		}
+	}
 
 	go updSourceMap[sn].InitRtcp(sc)
 	go updSourceMap[sn].InitRtpReader(sc)
@@ -264,27 +285,6 @@ func (l *updSource) InitRtpReader(sc *core.StreamConfig) {
 	defer func() {
 		l.wg.Done()
 	}()
-	l.pktsChanMap = make(map[string]chan *rtp.Packet)
-	l.pktsChanMap["audio"] = make(chan *rtp.Packet, 10)
-	l.pktsChanMap["video"] = make(chan *rtp.Packet, 10)
-	l.depacketizer = make(map[string]rtp.Depacketizer)
-	l.sampleBuffer = make(map[string]*samplebuilder.SampleBuilder)
-	l.tracks = make(map[string]*webrtc.TrackLocalStaticSample)
-	for kind := range codecMap {
-		l.depacketizer[kind] = codecMap[kind].dep
-		l.sampleBuffer[kind] = samplebuilder.New(
-			uint16(codecMap[kind].PacketMaxLate),
-			l.depacketizer[kind],
-			uint32(codecMap[kind].SampleRate))
-		var err error
-		l.tracks[kind], err = webrtc.NewTrackLocalStaticSample(
-			webrtc.RTPCodecCapability{MimeType: codecMap[kind].MimeType},
-			kind,
-			sc.ChannelName)
-		if err != nil {
-			log.Printf("InitRtpReader - NewTrackLocalStaticSample, kind: %s, error: %s", kind, err)
-		}
-	}
 	sn := sc.StreamName
 	var err error
 	IPIn := ini.SCMap[sn].IPIn
