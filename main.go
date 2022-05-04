@@ -567,7 +567,7 @@ func registerReceiver(client *wss.Client) {
 			ReceiversWebrtcMap[sn].actualChannel = ""
 			changeChannel(client, oc.channel)
 
-			/*go func() {
+			go func() {
 				for {
 					for _, sender := range ReceiversWebrtcMap[sn].peerConnection.GetSenders() {
 						kind := sender.Track().Kind().String()
@@ -581,7 +581,7 @@ func registerReceiver(client *wss.Client) {
 						}
 					}
 				}
-			}()*/
+			}()
 			/*go func() {
 				for {
 					for _, receiver := range ReceiversWebrtcMap[sn].peerConnection.GetReceivers() {
