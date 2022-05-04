@@ -115,9 +115,7 @@ func check(FunctionName string, sn string, err error) {
 func AddRTPsource(sc *core.StreamConfig) {
 	log.Printf("AddRTPsource: %+v\n", sc)
 	sn := sc.StreamName
-
 	sourceMutex.Lock()
-
 	updSourceMap[sn] = new(updSource)
 	updSourceMap[sn].wg = &sync.WaitGroup{}
 	updSourceMap[sn].ctx, updSourceMap[sn].cancel = context.WithCancel(context.Background())
@@ -685,7 +683,7 @@ func main() {
 	codecMap["audio"] = Codecs{
 		MimeType:      webrtc.MimeTypeOpus,
 		SampleRate:    48000,
-		PacketMaxLate: 100,
+		PacketMaxLate: 10,
 		dep:           &codecs.OpusPacket{},
 	}
 
