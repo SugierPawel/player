@@ -292,7 +292,7 @@ func (l *updSource) InitRtpReader(sc *core.StreamConfig) {
 
 	l.rtpConn, err = net.ListenUDP("udp", &net.UDPAddr{IP: net.ParseIP(IPIn), Port: port})
 	if err != nil {
-		log.Printf("InitRtp, sn: %s, IPIn: %s, port: %d, err: %s", sn, IPIn, port, err)
+		log.Printf("InitRtpReader, sn: %s, IPIn: %s, port: %d, err: %s", sn, IPIn, port, err)
 		return
 	}
 	var kind string
@@ -306,12 +306,13 @@ func (l *updSource) InitRtpReader(sc *core.StreamConfig) {
 			packet := make([]byte, 1200)
 			n, _, err := l.rtpConn.ReadFrom(packet)
 			if err != nil {
-				log.Printf("InitRtp, sn: %s, ReadFrom error: %s", sn, err)
+				log.Printf("InitRtpReader, sn: %s, ReadFrom error: %s", sn, err)
 				break
 			}
+			log.Printf("InitRtpReader, sn: %s, kind: %s, n: %d", sn, kind, n)
 			rtpPacket := &rtp.Packet{}
 			if err = rtpPacket.Unmarshal(packet[:n]); err != nil {
-				log.Printf("InitRtp, sn: %s, rtpPacket.Unmarshal error: %s", sn, err)
+				log.Printf("InitRtpReader, sn: %s, rtpPacket.Unmarshal error: %s", sn, err)
 				break
 			}
 			switch rtpPacket.Header.PayloadType {
@@ -345,7 +346,7 @@ func (l *updSource) InitRtpWriter(sc *core.StreamConfig, kind string) {
 					//log.Printf("InitRtp << nie gotowy...., kind: %s", kind)
 					break
 				}
-				log.Printf("InitRtp >> WriteSample!!!, sn: %s, kind: %s, ts: %d, dropped: %d", sn, kind, sample.PacketTimestamp, sample.PrevDroppedPackets)
+				//WriteSample!!!, sn: %s, kind: %s, ts: %d, dropped: %d", sn, kind, sample.PacketTimestamp, sample.PrevDroppedPackets)
 				if sample.PrevDroppedPackets > 0 {
 					log.Printf("InitRtp >> WriteSample!!!, kind: %s, ts: %d, dropped: %d", kind, sample.PacketTimestamp, sample.PrevDroppedPackets)
 				}
