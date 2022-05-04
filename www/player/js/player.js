@@ -1013,6 +1013,10 @@ var Player = function (m)
         m.listMap[channel.StreamName].option.value = channel.StreamName;
         m.listMap[channel.StreamName].option.text = channel.ChannelName;
         m.listSelect.appendChild(m.listMap[channel.StreamName].option);
+
+        if (channel == m.channel){
+            WebRTC.Open(true);
+        };
     };
     m.DelChannel = function(data)
     {
