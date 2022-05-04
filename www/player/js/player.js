@@ -881,10 +881,9 @@ var WebRTC = function (m)
             console.log(" >>> :: ", r, receivers[r].track.kind, receivers[r].transport);
             receivers[r].getStats().then(function(stats) {
                 console.log(" >>> :: STATS ::", stats);
-                for (const s in stats)
-                {
-                    console.log(" >>> ::", s, stats[s]);
-                };
+                stats.forEach(function(v){
+                    console.log(" >>> ::", v);
+                });
             });
         };
     };
