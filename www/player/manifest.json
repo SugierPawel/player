@@ -49,7 +49,7 @@
         "prefer_related_applications": false,
         "related_applications": [{
             "platform": "web", 
-            "url": "172.26.9.100"
+            "url": "127.0.0.1"
       }
     ]
 }

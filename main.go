@@ -31,26 +31,29 @@ import (
 
 const (
 	sleepTime     = time.Millisecond * 100
-	webSocketAddr = "172.26.9.100:2000" //"172.26.9.100:2000" "127.0.0.1:2000"
+	serverAddress = "127.0.0.1"           //"172.26.9.100"
+	webSocketAddr = serverAddress + ":80" //"172.26.9.100:2000" "127.0.0.1:2000"
 )
 
 var wssHub *wss.Hub
 var sourceMutex sync.Mutex
 var updSourceMap map[string]*updSource
-var TracksMap map[string]*TracksConfig
-var SourceToWebrtcMap map[string]*SourceToWebrtcConfig
 var ReceiversWebrtcMap map[string]*SourceToWebrtcConfig
 var remoteP2PQueueMap map[string]*remoteP2PQueueConfig
 var codecMap map[string]Codecs
 
 type updSource struct {
-	rtcpConn *net.UDPConn
-	rtpConn  *net.UDPConn
-	wg       *sync.WaitGroup
-	ctx      context.Context
-	cancel   context.CancelFunc
-	ssrcMap  map[string]string
-	mutex    sync.Mutex
+	wg           *sync.WaitGroup
+	ctx          context.Context
+	rtcpConn     *net.UDPConn
+	rtpConn      *net.UDPConn
+	cancel       context.CancelFunc
+	ssrcMap      map[string]string
+	ssrcMutex    sync.Mutex
+	pktsChanMap  map[string]chan *rtp.Packet
+	depacketizer map[string]rtp.Depacketizer
+	sampleBuffer map[string]*samplebuilder.SampleBuilder
+	tracks       map[string]*webrtc.TrackLocalStaticSample
 }
 type iceConfig struct {
 	client *wss.Client
@@ -83,15 +86,6 @@ type JsMessage struct {
 	Data    string `json:"data"`
 	Channel string `json:"channel"`
 }
-type TracksDirectionConfig struct {
-	ssrcMap      map[string]string
-	depacketizer map[string]rtp.Depacketizer
-	sampleBuffer map[string]*samplebuilder.SampleBuilder
-	kind         map[string]*webrtc.TrackLocalStaticSample
-}
-type TracksConfig struct {
-	Direction map[string]*TracksDirectionConfig
-}
 type Codecs struct {
 	MimeType      string
 	SampleRate    int
@@ -102,19 +96,19 @@ type Codecs struct {
 var receiverWebrtcConfiguration = webrtc.Configuration{
 	ICEServers: []webrtc.ICEServer{
 		{
-			URLs:       []string{"turn:172.26.9.100:5900"},
+			URLs:       []string{"turn:" + serverAddress + ":5900"},
 			Username:   "turnserver",
 			Credential: "turnserver",
 		},
 		{
-			URLs: []string{"stun:172.26.9.100:5900"},
+			URLs: []string{"stun:" + serverAddress + ":5900"},
 		},
 	},
 }
 var webrtcConfiguration = webrtc.Configuration{
 	ICEServers: []webrtc.ICEServer{
 		{
-			URLs: []string{"stun:172.26.9.100:5900"},
+			URLs: []string{"stun:" + serverAddress + ":5900"},
 		},
 	},
 }
@@ -131,28 +125,15 @@ func AddRTPsource(sc *core.StreamConfig) {
 
 	sourceMutex.Lock()
 
-	TracksMap[sn] = new(TracksConfig)
-	TracksMap[sn].Direction = make(map[string]*TracksDirectionConfig)
 	updSourceMap[sn] = new(updSource)
-	updSourceMap[sn].ssrcMap = make(map[string]string)
-	SourceToWebrtcMap[sn] = new(SourceToWebrtcConfig)
-
-	initLocalTracks(sc, "RTP")
-	initLocalTracks(sc, "Broadcast")
-
 	updSourceMap[sn].wg = &sync.WaitGroup{}
 	updSourceMap[sn].ctx, updSourceMap[sn].cancel = context.WithCancel(context.Background())
+	updSourceMap[sn].ssrcMap = make(map[string]string)
 
-	go updSourceMap[sn].InitRtcp(sc)
-	go updSourceMap[sn].InitRtp(sc)
-
-	sdp1 := make(chan string, 1)
-	sdp2 := make(chan string, 1)
-	ice1 := make(chan *webrtc.ICECandidate, 1)
-	ice2 := make(chan *webrtc.ICECandidate, 1)
-
-	go updSourceMap[sn].localRTPofferer(sn, sdp1, sdp2, ice1, ice2)
-	go updSourceMap[sn].localRTPanswerer(sn, sdp1, sdp2, ice1, ice2)
+	//go updSourceMap[sn].InitRtcp(sc)
+	go updSourceMap[sn].InitRtpReader(sc)
+	go updSourceMap[sn].InitRtpWriter(sc, "video")
+	go updSourceMap[sn].InitRtpWriter(sc, "audio")
 
 	jsonStr, _ := json.Marshal(sc)
 	data, _ := json.Marshal(&JsMessage{
@@ -177,34 +158,7 @@ func DelRTPsource(sc *core.StreamConfig) {
 	updSourceMap[sn].cancel()
 	updSourceMap[sn].wg.Wait()
 
-	delete(TracksMap, sn)
 	delete(updSourceMap, sn)
-}
-
-func initLocalTracks(sc *core.StreamConfig, direction string) {
-	sn := sc.StreamName
-	var err error
-
-	TracksMap[sn].Direction[direction] = new(TracksDirectionConfig)
-	TracksMap[sn].Direction[direction].ssrcMap = make(map[string]string)
-	TracksMap[sn].Direction[direction].kind = make(map[string]*webrtc.TrackLocalStaticSample)
-	TracksMap[sn].Direction[direction].depacketizer = make(map[string]rtp.Depacketizer)
-	TracksMap[sn].Direction[direction].sampleBuffer = make(map[string]*samplebuilder.SampleBuilder)
-
-	for kind := range codecMap {
-		TracksMap[sn].Direction[direction].depacketizer[kind] = codecMap[kind].dep
-		TracksMap[sn].Direction[direction].sampleBuffer[kind] = samplebuilder.New(
-			uint16(codecMap[kind].PacketMaxLate),
-			TracksMap[sn].Direction[direction].depacketizer[kind],
-			uint32(codecMap[kind].SampleRate))
-		TracksMap[sn].Direction[direction].kind[kind], err = webrtc.NewTrackLocalStaticSample(
-			webrtc.RTPCodecCapability{MimeType: codecMap[kind].MimeType},
-			kind,
-			sc.ChannelName)
-		if err != nil {
-			log.Printf("initLocalTracks, sn: %s, kind: %s, direction: %s, error: %s", sn, kind, direction, err)
-		}
-	}
 }
 
 func (l *updSource) InitRtcp(sc *core.StreamConfig) {
@@ -240,23 +194,14 @@ func (l *updSource) InitRtcp(sc *core.StreamConfig) {
 			sr := &rtcp.SenderReport{}
 			sr.Unmarshal(p[:rtcpN])
 
-			err = SourceToWebrtcMap[sn].answerPeerConnection.WriteRTCP([]rtcp.Packet{sr})
-			if err != nil {
-				log.Printf("InitRtcp, sn: %s, SourceToWebrtcMap - WriteRTCP error: %s", sn, err)
-			}
-			err = SourceToWebrtcMap[sn].peerConnection.WriteRTCP([]rtcp.Packet{sr})
-			if err != nil {
-				log.Printf("InitRtcp, sn: %s, SourceToWebrtcMap - WriteRTCP error: %s", sn, err)
-			}
-
-			l.mutex.Lock()
+			l.ssrcMutex.Lock()
 			var kind string
 			if fmt.Sprint(sr.SSRC) == l.ssrcMap["video"] {
 				kind = "video"
 			} else if fmt.Sprint(sr.SSRC) == l.ssrcMap["audio"] {
 				kind = "audio"
 			}
-			l.mutex.Unlock()
+			l.ssrcMutex.Unlock()
 
 			/*for n, packet := range packets {
 				log.Printf("InitRtcp << sn: %s, n: %d, SSRC: %d", sn, n, packet.DestinationSSRC())
@@ -266,16 +211,32 @@ func (l *updSource) InitRtcp(sc *core.StreamConfig) {
 			for receiverSN, config := range ReceiversWebrtcMap {
 				if config.actualChannel == sn {
 
-					intVar, _ := strconv.Atoi(ReceiversWebrtcMap[receiverSN].ssrcMap[kind])
+					/*intVar, _ := strconv.Atoi(ReceiversWebrtcMap[receiverSN].ssrcMap[kind])
 					var ssrc uint32 = uint32(intVar)
-					preSSRC := sr.SSRC
+					//preSSRC := sr.SSRC
 					sr.SSRC = ssrc
-
-					log.Printf(">> InitRtcp >> sn: %s, kind: %s, preSSRC: %d, DestinationSSRC: %d", sn, kind, preSSRC, sr.DestinationSSRC())
-
 					err = config.peerConnection.WriteRTCP([]rtcp.Packet{sr})
 					if err != nil {
-						log.Printf("InitRtcp, sn: %s, WriteRTCP error: %s", sn, err)
+						log.Printf(">> InitRtcp >> sn: %s, WriteRTCP error: %s", sn, err)
+					}*/
+					//log.Printf(">> InitRtcp >> sn: %s, kind: %s, preSSRC: %d, DestinationSSRC: %d", sn, kind, preSSRC, sr.DestinationSSRC())
+
+					for _, sender := range config.peerConnection.GetSenders() {
+						senderKind := sender.Track().Kind().String()
+						if senderKind != kind {
+							continue
+						}
+						intVar, _ := strconv.Atoi(ReceiversWebrtcMap[receiverSN].ssrcMap[senderKind])
+						var ssrc uint32 = uint32(intVar)
+						preSSRC := sr.SSRC
+						sr.SSRC = ssrc
+
+						writed, err := sender.Transport().WriteRTCP([]rtcp.Packet{sr})
+						if err != nil {
+							log.Printf(">> InitRtcp >> sn: %s, WriteRTCP error: %s", sn, err)
+						}
+						log.Printf(">> InitRtcp >> sn: %s, senderKind: %s, preSSRC: %d, DestinationSSRC: %d, writed: %d", sn, senderKind, preSSRC, sr.DestinationSSRC(), writed)
+
 					}
 
 					/*for _, sender := range config.peerConnection.GetSenders() {
@@ -306,15 +267,35 @@ func (l *updSource) InitRtcp(sc *core.StreamConfig) {
 		}
 	}
 }
-func (l *updSource) InitRtp(sc *core.StreamConfig) {
+func (l *updSource) InitRtpReader(sc *core.StreamConfig) {
 	defer func() {
 		l.wg.Done()
 	}()
+	l.pktsChanMap = make(map[string]chan *rtp.Packet)
+	l.pktsChanMap["audio"] = make(chan *rtp.Packet, 500)
+	l.pktsChanMap["video"] = make(chan *rtp.Packet, 500)
+	l.depacketizer = make(map[string]rtp.Depacketizer)
+	l.sampleBuffer = make(map[string]*samplebuilder.SampleBuilder)
+	l.tracks = make(map[string]*webrtc.TrackLocalStaticSample)
+	for kind := range codecMap {
+		l.depacketizer[kind] = codecMap[kind].dep
+		l.sampleBuffer[kind] = samplebuilder.New(
+			uint16(codecMap[kind].PacketMaxLate),
+			l.depacketizer[kind],
+			uint32(codecMap[kind].SampleRate))
+		var err error
+		l.tracks[kind], err = webrtc.NewTrackLocalStaticSample(
+			webrtc.RTPCodecCapability{MimeType: codecMap[kind].MimeType},
+			kind,
+			sc.ChannelName)
+		if err != nil {
+			log.Printf("InitRtpReader - NewTrackLocalStaticSample, kind: %s, error: %s", kind, err)
+		}
+	}
 	sn := sc.StreamName
 	var err error
 	IPIn := ini.SCMap[sn].IPIn
 	var port = ini.SCMap[sn].PortIn
-	var broadcast string = "Broadcast"
 
 	l.rtpConn, err = net.ListenUDP("udp", &net.UDPAddr{IP: net.ParseIP(IPIn), Port: port})
 	if err != nil {
@@ -330,222 +311,54 @@ func (l *updSource) InitRtp(sc *core.StreamConfig) {
 			return
 		default:
 			packet := make([]byte, 1200)
-			rtpPacket := &rtp.Packet{}
 			n, _, err := l.rtpConn.ReadFrom(packet)
 			if err != nil {
 				log.Printf("InitRtp, sn: %s, ReadFrom error: %s", sn, err)
 				break
 			}
+			rtpPacket := &rtp.Packet{}
 			if err = rtpPacket.Unmarshal(packet[:n]); err != nil {
 				log.Printf("InitRtp, sn: %s, rtpPacket.Unmarshal error: %s", sn, err)
 				break
 			}
-
 			switch rtpPacket.Header.PayloadType {
 			case 96:
 				kind = "video"
 			case 97:
 				kind = "audio"
 			}
-			l.mutex.Lock()
-			l.ssrcMap[kind] = fmt.Sprint(rtpPacket.SSRC)
-			l.mutex.Unlock()
-
-			//log.Printf("InitRtp <<<< kind: %s, n: %d, pt: %d, SSRC: %d", kind, n, rtpPacket.Header.PayloadType, rtpPacket.SSRC)
-			TracksMap[sn].Direction[broadcast].sampleBuffer[kind].Push(rtpPacket)
+			l.pktsChanMap[kind] <- rtpPacket
+			//l.ssrcMutex.Lock()
+			//l.ssrcMap[kind] = fmt.Sprint(rtpPacket.SSRC)
+			//l.ssrcMutex.Unlock()
+		}
+	}
+}
+func (l *updSource) InitRtpWriter(sc *core.StreamConfig, kind string) {
+	defer func() {
+		l.wg.Done()
+	}()
+	sn := sc.StreamName
+	for {
+		select {
+		case <-l.ctx.Done():
+			log.Printf("rtpConn, sn: %s, ctx.Done()", sn)
+			return
+		case rtpPacket := <-l.pktsChanMap[kind]:
+			l.sampleBuffer[kind].Push(rtpPacket)
 			for {
-				sample := TracksMap[sn].Direction[broadcast].sampleBuffer[kind].Pop()
+				sample := l.sampleBuffer[kind].Pop()
 				if sample == nil {
 					//log.Printf("InitRtp << nie gotowy...., kind: %s", kind)
 					break
 				}
-				//log.Printf("InitRtp >> WriteSample!!!, kind: %s, ts: %d, dropped: %d", kind, sample.PacketTimestamp, sample.PrevDroppedPackets)
-				if err := TracksMap[sn].Direction[broadcast].kind[kind].WriteSample(*sample); err != nil {
+				if sample.PrevDroppedPackets > 0 {
+					log.Printf("InitRtp >> WriteSample!!!, kind: %s, ts: %d, dropped: %d", kind, sample.PacketTimestamp, sample.PrevDroppedPackets)
+				}
+				if err := l.tracks[kind].WriteSample(*sample); err != nil {
 					log.Printf("InitRtp, kind: %s, sn: %s, WriteSample error: %s", kind, sn, err)
 				}
 			}
-		}
-	}
-}
-
-func (l *updSource) localRTPofferer(sn string, offerSDP chan<- string, answerSDP <-chan string, iceOffer chan<- *webrtc.ICECandidate, iceAnswer <-chan *webrtc.ICECandidate) {
-	defer func() {
-		l.wg.Done()
-	}()
-	var fName string = "localRTPofferer"
-	var err error
-
-	SourceToWebrtcMap[sn].mediaEngine = &webrtc.MediaEngine{}
-	SourceToWebrtcMap[sn].settingEngine = &webrtc.SettingEngine{}
-	SourceToWebrtcMap[sn].interceptor = &interceptor.Registry{}
-
-	if err := SourceToWebrtcMap[sn].mediaEngine.RegisterCodec(webrtc.RTPCodecParameters{
-		RTPCodecCapability: webrtc.RTPCodecCapability{MimeType: codecMap["video"].MimeType, ClockRate: uint32(codecMap["video"].SampleRate), Channels: 0, SDPFmtpLine: "", RTCPFeedback: nil},
-		PayloadType:        96,
-	}, webrtc.RTPCodecTypeVideo); err != nil {
-		panic(err)
-	}
-	if err := SourceToWebrtcMap[sn].mediaEngine.RegisterCodec(webrtc.RTPCodecParameters{
-		RTPCodecCapability: webrtc.RTPCodecCapability{MimeType: codecMap["audio"].MimeType, ClockRate: uint32(codecMap["audio"].SampleRate), Channels: 0, SDPFmtpLine: "", RTCPFeedback: nil},
-		PayloadType:        97,
-	}, webrtc.RTPCodecTypeAudio); err != nil {
-		panic(err)
-	}
-
-	if err := webrtc.RegisterDefaultInterceptors(SourceToWebrtcMap[sn].mediaEngine, SourceToWebrtcMap[sn].interceptor); err != nil {
-		panic(err)
-	}
-	SourceToWebrtcMap[sn].api = webrtc.NewAPI(
-		webrtc.WithSettingEngine(*SourceToWebrtcMap[sn].settingEngine),
-		webrtc.WithMediaEngine(SourceToWebrtcMap[sn].mediaEngine),
-		webrtc.WithInterceptorRegistry(SourceToWebrtcMap[sn].interceptor),
-	)
-
-	SourceToWebrtcMap[sn].peerConnection, err = SourceToWebrtcMap[sn].api.NewPeerConnection(webrtcConfiguration)
-	if err != nil {
-		panic(err)
-	}
-
-	SourceToWebrtcMap[sn].peerConnection.OnConnectionStateChange(func(state webrtc.PeerConnectionState) {
-		log.Printf("OnConnectionStateChange, sn: %s, state: %s\n", sn, state.String())
-	})
-	SourceToWebrtcMap[sn].peerConnection.OnICECandidate(func(ice *webrtc.ICECandidate) {
-		if ice == nil {
-			return
-		}
-		candidateString, err := json.Marshal(ice.ToJSON())
-		if err != nil {
-			log.Println(err)
-			return
-		}
-		log.Default().Printf(" >> rtp ICE >> %s", candidateString)
-		iceOffer <- ice
-	})
-	SourceToWebrtcMap[sn].peerConnection.OnICEConnectionStateChange(func(state webrtc.ICEConnectionState) {
-		log.Printf("localRTPofferer - OnICEConnectionStateChange, sn: %s, state: %s\n", sn, state.String())
-	})
-	SourceToWebrtcMap[sn].peerConnection.OnICEGatheringStateChange(func(state webrtc.ICEGathererState) {
-		log.Printf("localRTPofferer - OnICEGatheringStateChange, sn: %s, state: %s\n", sn, state.String())
-	})
-	SourceToWebrtcMap[sn].peerConnection.OnNegotiationNeeded(func() {
-		log.Printf("localRTPofferer - OnNegotiationNeeded, sn: %s", sn)
-	})
-	SourceToWebrtcMap[sn].peerConnection.OnSignalingStateChange(func(state webrtc.SignalingState) {
-		log.Printf("localRTPofferer - OnSignalingStateChange, sn: %s, state: %s\n", sn, state.String())
-	})
-
-	_, err = SourceToWebrtcMap[sn].peerConnection.AddTransceiverFromTrack(TracksMap[sn].Direction["RTP"].kind["video"],
-		webrtc.RtpTransceiverInit{
-			Direction: webrtc.RTPTransceiverDirectionSendonly,
-		},
-	)
-	if err != nil {
-		panic(err)
-	}
-	_, err = SourceToWebrtcMap[sn].peerConnection.AddTransceiverFromTrack(TracksMap[sn].Direction["RTP"].kind["audio"],
-		webrtc.RtpTransceiverInit{
-			Direction: webrtc.RTPTransceiverDirectionSendonly,
-		},
-	)
-	if err != nil {
-		panic(err)
-	}
-
-	offer, err := SourceToWebrtcMap[sn].peerConnection.CreateOffer(nil)
-	check(fName, sn, err)
-
-	//log.Printf(" >> rtp OFFER >>\n%v\n", offer.SDP)
-	log.Printf(" >> rtp OFFER >>")
-
-	err = SourceToWebrtcMap[sn].peerConnection.SetLocalDescription(offer)
-	check(fName, sn, err)
-
-	offerSDP <- offer.SDP
-
-	answer := <-answerSDP
-	//log.Printf(" << rtp ANSWER <<\n%v\n", answer)
-	log.Printf(" << rtp ANSWER <<")
-
-	err = SourceToWebrtcMap[sn].peerConnection.SetRemoteDescription(webrtc.SessionDescription{
-		Type: webrtc.SDPTypeAnswer,
-		SDP:  answer,
-	})
-	check(fName, sn, err)
-
-	for {
-		select {
-		case <-l.ctx.Done():
-			log.Printf("localRTPofferer, sn: %s, ctx.Done()", sn)
-			return
-		case ice := <-iceAnswer:
-			err = SourceToWebrtcMap[sn].peerConnection.AddICECandidate(ice.ToJSON())
-			check(fName, sn, err)
-		default:
-			<-time.After(sleepTime)
-		}
-	}
-}
-func (l *updSource) localRTPanswerer(sn string, offerSDP <-chan string, answerSDP chan<- string, iceOffer <-chan *webrtc.ICECandidate, iceAnswer chan<- *webrtc.ICECandidate) {
-	defer func() {
-		l.wg.Done()
-	}()
-	var fName string = "localRTPanswerer"
-	var err error
-	SourceToWebrtcMap[sn].answerPeerConnection, err = webrtc.NewPeerConnection(webrtcConfiguration)
-	check(fName, sn, err)
-
-	SourceToWebrtcMap[sn].answerPeerConnection.OnConnectionStateChange(func(state webrtc.PeerConnectionState) {
-		log.Printf("localRTPanswerer - OnConnectionStateChange, sn: %s, state: %s\n", sn, state.String())
-	})
-	SourceToWebrtcMap[sn].answerPeerConnection.OnICECandidate(func(ice *webrtc.ICECandidate) {
-		if ice == nil {
-			return
-		}
-		init := ice.ToJSON()
-		log.Printf(" << rtp ICE << Candidate: %s, SDPMLineIndex: %d", init.Candidate, init.SDPMLineIndex)
-		iceAnswer <- ice
-	})
-	SourceToWebrtcMap[sn].answerPeerConnection.OnICEConnectionStateChange(func(state webrtc.ICEConnectionState) {
-		log.Printf("localRTPanswerer - OnICEConnectionStateChange, sn: %s, state: %s\n", sn, state.String())
-	})
-	SourceToWebrtcMap[sn].answerPeerConnection.OnICEGatheringStateChange(func(state webrtc.ICEGathererState) {
-		log.Printf("localRTPanswerer - OnICEGatheringStateChange, sn: %s, state: %s\n", sn, state.String())
-	})
-	SourceToWebrtcMap[sn].answerPeerConnection.OnNegotiationNeeded(func() {
-		log.Printf("localRTPanswerer - OnNegotiationNeeded, sn: %s", sn)
-	})
-	SourceToWebrtcMap[sn].answerPeerConnection.OnSignalingStateChange(func(state webrtc.SignalingState) {
-		log.Printf("localRTPanswerer - OnSignalingStateChange, sn: %s, state: %s\n", sn, state.String())
-	})
-	SourceToWebrtcMap[sn].answerPeerConnection.OnTrack(func(track *webrtc.TrackRemote, receiver *webrtc.RTPReceiver) {
-		kind := track.Kind().String()
-		log.Printf("answerer - sn: %s, OnTrack track.Kind(): %s", sn, kind)
-	})
-
-	err = SourceToWebrtcMap[sn].answerPeerConnection.SetRemoteDescription(webrtc.SessionDescription{
-		Type: webrtc.SDPTypeOffer,
-		SDP:  <-offerSDP,
-	})
-	check(fName, sn, err)
-
-	answer, err := SourceToWebrtcMap[sn].answerPeerConnection.CreateAnswer(nil)
-	check(fName, sn, err)
-
-	err = SourceToWebrtcMap[sn].answerPeerConnection.SetLocalDescription(answer)
-	check(fName, sn, err)
-
-	answerSDP <- answer.SDP
-
-	for {
-		select {
-		case <-l.ctx.Done():
-			log.Printf("localRTPanswerer, sn: %s, ctx.Done()", sn)
-			return
-		case ice := <-iceOffer:
-			err = SourceToWebrtcMap[sn].answerPeerConnection.AddICECandidate(ice.ToJSON())
-			check(fName, sn, err)
-		default:
-			<-time.After(sleepTime)
 		}
 	}
 }
@@ -605,8 +418,7 @@ func addRemoteOffer(client *wss.Client, jsMsg JsMessage) {
 func changeChannel(client *wss.Client, channel string) {
 	var fName string = "changeChannel"
 	var sn = client.Conn.RemoteAddr().String()
-	var err error
-	if _, ok := SourceToWebrtcMap[channel]; !ok {
+	if _, ok := updSourceMap[channel]; !ok {
 		log.Printf(" << CHANGE CHANNEL << klient: %s, brak aktywnego źródła rtp:// %s", sn, channel)
 		return
 	}
@@ -619,32 +431,9 @@ func changeChannel(client *wss.Client, channel string) {
 		return
 	} else if ReceiversWebrtcMap[sn].actualChannel != "" {
 		log.Printf(" << REPLACE CHANNEL << klient: %s, zamieniam: %s / %s", sn, ReceiversWebrtcMap[sn].actualChannel, channel)
-		for _, sender := range SourceToWebrtcMap[sn].peerConnection.GetSenders() {
-
-			kind := sender.Track().Kind().String()
-
-			//err = SourceToWebrtcMap[sn].peerConnection.RemoveTrack(sender)
-			//check(fName, sn, err)
-			//_, err = SourceToWebrtcMap[sn].peerConnection.AddTrack(TracksMap[channel].Direction["Broadcast"].kind[kind])
-			//check(fName, sn, err)
-
-			err = sender.ReplaceTrack(TracksMap[channel].Direction["Broadcast"].kind[kind])
-			check(fName, sn, err)
-
-			/*
-				Do prawidłowego działania "ReplaceTrack" należy zadbać o synchronizacje SequenceNumber/Timestamp...
-				err = sender.ReplaceTrack(TracksMap[channel].Direction["Broadcast"].kind[sender.Track().Kind().String()])
-				check(fName, sn, err)
-				switch sender.Track().Kind().String() {
-				case "video":
-					err = SourceToWebrtcMap[sn].peerConnection.WriteRTCP([]rtcp.Packet{&rtcp.PictureLossIndication{MediaSSRC: uint32(SourceToWebrtcMap[sn].ssrc)}})
-					check(fName, sn, err)
-				case "audio":
-				}*/
-		}
 	} else if ReceiversWebrtcMap[sn].actualChannel == "" {
 		log.Printf(" << ASIGN CHANNEL << klient: %s, kanał: %s", sn, channel)
-		for _, track := range TracksMap[channel].Direction["Broadcast"].kind {
+		for _, track := range updSourceMap[channel].tracks {
 			_, err := ReceiversWebrtcMap[sn].peerConnection.AddTrack(track)
 			check(fName, sn, err)
 			/*go func() {
@@ -781,6 +570,36 @@ func registerReceiver(client *wss.Client) {
 			ReceiversWebrtcMap[sn].actualChannel = ""
 			changeChannel(client, oc.channel)
 
+			/*go func() {
+				for {
+					for _, sender := range ReceiversWebrtcMap[sn].peerConnection.GetSenders() {
+						kind := sender.Track().Kind().String()
+						pkts, a, err := sender.ReadRTCP()
+						if err != nil {
+							log.Printf(">> sender >> kind: %s, a: %v, rtcpErr: %s", kind, a, err)
+							continue
+						}
+						for i, pkt := range pkts {
+							log.Printf(">> sender >> kind: %s, pkt[%d], SSRC: %d", kind, i, pkt.DestinationSSRC())
+						}
+					}
+				}
+			}()*/
+			/*go func() {
+				for {
+					for _, receiver := range ReceiversWebrtcMap[sn].peerConnection.GetReceivers() {
+						pkts, a, err := receiver.ReadRTCP()
+						if err != nil {
+							log.Printf(">> receiver >> a: %v, rtcpErr: %s", a, err)
+							continue
+						}
+						for i, pkt := range pkts {
+							log.Printf(">> receiver >> pkt[%d], SSRC: %d", i, pkt.DestinationSSRC())
+						}
+					}
+				}
+			}()*/
+
 			answer, err := ReceiversWebrtcMap[sn].peerConnection.CreateAnswer(nil)
 			check(fName, sn, err)
 
@@ -858,15 +677,13 @@ func main() {
 
 	codecMap = make(map[string]Codecs)
 	updSourceMap = make(map[string]*updSource)
-	SourceToWebrtcMap = make(map[string]*SourceToWebrtcConfig)
 	ReceiversWebrtcMap = make(map[string]*SourceToWebrtcConfig)
 	remoteP2PQueueMap = make(map[string]*remoteP2PQueueConfig)
-	TracksMap = make(map[string]*TracksConfig)
 
 	codecMap["video"] = Codecs{
 		MimeType:      webrtc.MimeTypeH264,
 		SampleRate:    90000,
-		PacketMaxLate: 10,
+		PacketMaxLate: 150,
 		dep:           &codecs.H264Packet{},
 	}
 	codecMap["audio"] = Codecs{

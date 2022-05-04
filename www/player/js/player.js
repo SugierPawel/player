@@ -390,6 +390,7 @@ var Ws = function (m)
     m.protocol = window.location.protocol == "chrome-extension:" ? "wss" : window.location.protocol === "https:" ? "wss" : "ws";
     m.port = window.location.protocol == "chrome-extension:" ? "443" : window.location.protocol === "https:" ? "443" : "80";
     m.wsAddr = m.protocol + "://" + m.host + ":" + m.port + "/signal";
+    //m.wsAddr = m.protocol + "://127.0.0.1:" + m.port + "/signal";
     
     m.socket = null;
     m.CONNECTION_CLOSED = 0
@@ -591,7 +592,8 @@ var WebRTC = function (m)
     m.lastConnectTime = 0
     m.minConnectInterval = 15000
     m.connectTimeoutID = null;
-    m.rtcpcConfiguration = {
+    m.rtcpcConfiguration = {iceServers:[]};
+    m._rtcpcConfiguration = {
         iceServers: [
             {
                 url: "turn:172.26.9.100:5900?transport=udp",
