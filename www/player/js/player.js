@@ -874,6 +874,8 @@ var WebRTC = function (m)
     };
     m.GetStats = function()
     {
+        if (!m.rtcpc)
+            return
         var receivers = m.rtcpc.getReceivers();
         for (const r in receivers){
             console.log(" >>> :: ", r, receivers[r].track.kind, receivers[r].transport);
