@@ -225,52 +225,52 @@ func (l *updSource) InitRtcp(sc *core.StreamConfig) {
 			for receiverSN, config := range ReceiversWebrtcMap {
 				if config.actualChannel == sn {
 
-					/*intVar, _ := strconv.Atoi(ReceiversWebrtcMap[receiverSN].ssrcMap[kind])
+					intVar, _ := strconv.Atoi(ReceiversWebrtcMap[receiverSN].ssrcMap[kind])
 					var ssrc uint32 = uint32(intVar)
-					//preSSRC := sr.SSRC
+					preSSRC := sr.SSRC
 					sr.SSRC = ssrc
 					err = config.peerConnection.WriteRTCP([]rtcp.Packet{sr})
 					if err != nil {
 						log.Printf(">> InitRtcp >> sn: %s, WriteRTCP error: %s", sn, err)
-					}*/
-					//log.Printf(">> InitRtcp >> sn: %s, kind: %s, preSSRC: %d, DestinationSSRC: %d", sn, kind, preSSRC, sr.DestinationSSRC())
-
-					for _, sender := range config.peerConnection.GetSenders() {
-						senderKind := sender.Track().Kind().String()
-						if senderKind != kind {
-							continue
-						}
-						intVar, _ := strconv.Atoi(ReceiversWebrtcMap[receiverSN].ssrcMap[senderKind])
-						var ssrc uint32 = uint32(intVar)
-						preSSRC := sr.SSRC
-						sr.SSRC = ssrc
-
-						writed, err := sender.Transport().WriteRTCP([]rtcp.Packet{sr})
-						if err != nil {
-							log.Printf(">> InitRtcp >> sn: %s, WriteRTCP error: %s", sn, err)
-						}
-						log.Printf(">> InitRtcp >> sn: %s, senderKind: %s, preSSRC: %d, DestinationSSRC: %d, writed: %d", sn, senderKind, preSSRC, sr.DestinationSSRC(), writed)
 					}
+					log.Printf(">> InitRtcp >> sn: %s, kind: %s, preSSRC: %d, DestinationSSRC: %d", sn, kind, preSSRC, sr.DestinationSSRC())
+					/*
+						for _, sender := range config.peerConnection.GetSenders() {
+							senderKind := sender.Track().Kind().String()
+							if senderKind != kind {
+								continue
+							}
+							intVar, _ := strconv.Atoi(ReceiversWebrtcMap[receiverSN].ssrcMap[senderKind])
+							var ssrc uint32 = uint32(intVar)
+							preSSRC := sr.SSRC
+							sr.SSRC = ssrc
 
-					/*for _, sender := range config.peerConnection.GetSenders() {
-						switch sender.Track().Kind().String() {
-						case "video":
-
-						case "audio":
-
+							writed, err := sender.Transport().WriteRTCP([]rtcp.Packet{sr})
+							if err != nil {
+								log.Printf(">> InitRtcp >> sn: %s, WriteRTCP error: %s", sn, err)
+							}
+							log.Printf(">> InitRtcp >> sn: %s, senderKind: %s, preSSRC: %d, DestinationSSRC: %d, writed: %d", sn, senderKind, preSSRC, sr.DestinationSSRC(), writed)
 						}
 
-						//log.Printf(", !!!!!!!!!!!!!!! %s ", TracksMap[sn].Direction["Broadcast"].kind[sender.Track().Kind().String()])
-						//TracksMap[oc.channel].Direction["Broadcast"].ssrcMap["video"]
+						for _, sender := range config.peerConnection.GetSenders() {
+							switch sender.Track().Kind().String() {
+							case "video":
 
-						s, err := sender.Transport().WriteRTCP(pas)
-						if err != nil {
-							log.Printf("InitRtcp << błąd wysłania do rec: %s, err: %s", rec, err)
-						} else {
-							log.Printf("InitRtcp << wysłano: %d, do rec: %s, StreamID: %s", s, rec, sender.Track().StreamID())
-						}
+							case "audio":
 
-					}*/
+							}
+
+							//log.Printf(", !!!!!!!!!!!!!!! %s ", TracksMap[sn].Direction["Broadcast"].kind[sender.Track().Kind().String()])
+							//TracksMap[oc.channel].Direction["Broadcast"].ssrcMap["video"]
+
+							s, err := sender.Transport().WriteRTCP(pas)
+							if err != nil {
+								log.Printf("InitRtcp << błąd wysłania do rec: %s, err: %s", rec, err)
+							} else {
+								log.Printf("InitRtcp << wysłano: %d, do rec: %s, StreamID: %s", s, rec, sender.Track().StreamID())
+							}
+
+						}*/
 
 					//err = config.peerConnection.WriteRTCP(packets)
 
