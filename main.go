@@ -123,8 +123,8 @@ func AddRTPsource(sc *core.StreamConfig) {
 	updSourceMap[sn].ctx, updSourceMap[sn].cancel = context.WithCancel(context.Background())
 	updSourceMap[sn].ssrcMap = make(map[string]string)
 	updSourceMap[sn].pktsChanMap = make(map[string]chan *rtp.Packet)
-	updSourceMap[sn].pktsChanMap["audio"] = make(chan *rtp.Packet, 10)
-	updSourceMap[sn].pktsChanMap["video"] = make(chan *rtp.Packet, 10)
+	updSourceMap[sn].pktsChanMap["audio"] = make(chan *rtp.Packet, 100)
+	updSourceMap[sn].pktsChanMap["video"] = make(chan *rtp.Packet, 100)
 	updSourceMap[sn].depacketizer = make(map[string]rtp.Depacketizer)
 	updSourceMap[sn].sampleBuffer = make(map[string]*samplebuilder.SampleBuilder)
 	updSourceMap[sn].tracks = make(map[string]*webrtc.TrackLocalStaticSample)
@@ -680,13 +680,13 @@ func main() {
 	codecMap["video"] = Codecs{
 		MimeType:      webrtc.MimeTypeH264,
 		SampleRate:    90000,
-		PacketMaxLate: 50,
+		PacketMaxLate: 100,
 		dep:           &codecs.H264Packet{},
 	}
 	codecMap["audio"] = Codecs{
 		MimeType:      webrtc.MimeTypeOpus,
 		SampleRate:    48000,
-		PacketMaxLate: 50,
+		PacketMaxLate: 100,
 		dep:           &codecs.OpusPacket{},
 	}
 
