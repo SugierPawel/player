@@ -265,8 +265,8 @@ func (l *updSource) InitRtpReader(sc *core.StreamConfig) {
 		l.wg.Done()
 	}()
 	l.pktsChanMap = make(map[string]chan *rtp.Packet)
-	l.pktsChanMap["audio"] = make(chan *rtp.Packet, 1500)
-	l.pktsChanMap["video"] = make(chan *rtp.Packet, 1500)
+	l.pktsChanMap["audio"] = make(chan *rtp.Packet, 100)
+	l.pktsChanMap["video"] = make(chan *rtp.Packet, 100)
 	l.depacketizer = make(map[string]rtp.Depacketizer)
 	l.sampleBuffer = make(map[string]*samplebuilder.SampleBuilder)
 	l.tracks = make(map[string]*webrtc.TrackLocalStaticSample)
@@ -678,13 +678,13 @@ func main() {
 	codecMap["video"] = Codecs{
 		MimeType:      webrtc.MimeTypeH264,
 		SampleRate:    90000,
-		PacketMaxLate: 150,
+		PacketMaxLate: 50,
 		dep:           &codecs.H264Packet{},
 	}
 	codecMap["audio"] = Codecs{
 		MimeType:      webrtc.MimeTypeOpus,
 		SampleRate:    48000,
-		PacketMaxLate: 150,
+		PacketMaxLate: 50,
 		dep:           &codecs.OpusPacket{},
 	}
 
