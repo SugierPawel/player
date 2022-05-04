@@ -880,7 +880,7 @@ var WebRTC = function (m)
         for (const r in receivers){
             console.log(" >>> :: ", r, receivers[r].track.kind, receivers[r].transport);
             receivers[r].getStats().then(function(stats) {
-                console.log(" >>> :: STATS ::", stats.packetsLost);
+                console.log(" >>> :: STATS ::", stats);
             });
         };
     };
