@@ -514,7 +514,8 @@ func registerReceiver(client *wss.Client) {
 			log.Printf(" << OFFER << %s, channel: %s", sn, oc.channel)
 
 			ReceiversWebrtcMap[sn].peerConnection.Close()
-			ReceiversWebrtcMap[sn].peerConnection, err = ReceiversWebrtcMap[sn].api.NewPeerConnection(webrtcConfiguration)
+			//ReceiversWebrtcMap[sn].peerConnection, err = ReceiversWebrtcMap[sn].api.NewPeerConnection(webrtcConfiguration)
+			ReceiversWebrtcMap[sn].peerConnection, err = webrtc.NewPeerConnection(webrtcConfiguration)
 			check(fName, sn, err)
 
 			ReceiversWebrtcMap[sn].peerConnection.OnConnectionStateChange(func(state webrtc.PeerConnectionState) {
