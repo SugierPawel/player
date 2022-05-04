@@ -573,8 +573,15 @@ func registerReceiver(client *wss.Client) {
 						kind := sender.Track().Kind().String()
 						pkts, a, err := sender.ReadRTCP()
 						if err != nil {
-							log.Printf(">> sender >> kind: %s, a: %v, rtcpErr: %s", kind, a, err)
+							log.Printf(">> sender >> kind: %s, a: %v, err: %s", kind, a, err)
 							break
+						}
+						raw := make([]byte, 1200)
+						h, err := a.GetRTPHeader(raw)
+						if err != nil {
+							log.Printf(">> sender >> kind: %s, GetRTPHeader err: %s", kind, err)
+						} else {
+							log.Printf(">> sender >> pt: %d, SSRC: %d", h.PayloadType, h.SSRC)
 						}
 						for i, pkt := range pkts {
 							log.Printf(">> sender >> kind: %s, pkt[%d], SSRC: %d, pkt: %v", kind, i, pkt.DestinationSSRC(), pkt)
