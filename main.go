@@ -303,7 +303,7 @@ func (l *updSource) InitRtpReader(sc *core.StreamConfig) {
 			l.rtpConn.Close()
 			return
 		default:
-			packet := make([]byte, 1200)
+			packet := make([]byte, 1400)
 			n, _, err := l.rtpConn.ReadFrom(packet)
 			if err != nil {
 				log.Printf("InitRtpReader, sn: %s, ReadFrom error: %s", sn, err)
