@@ -678,13 +678,13 @@ func main() {
 	codecMap["video"] = Codecs{
 		MimeType:      webrtc.MimeTypeH264,
 		SampleRate:    90000,
-		PacketMaxLate: 50,
+		PacketMaxLate: 10,
 		dep:           &codecs.H264Packet{},
 	}
 	codecMap["audio"] = Codecs{
 		MimeType:      webrtc.MimeTypeOpus,
 		SampleRate:    48000,
-		PacketMaxLate: 50,
+		PacketMaxLate: 10,
 		dep:           &codecs.OpusPacket{},
 	}
 
