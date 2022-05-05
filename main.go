@@ -142,7 +142,7 @@ func AddRTPsource(sc *core.StreamConfig) {
 		}
 	}
 
-	go updSourceMap[sn].InitRtcpReader(sc)
+	//go updSourceMap[sn].InitRtcpReader(sc)
 	go updSourceMap[sn].InitRtpReader(sc)
 	go updSourceMap[sn].InitRtpWriter(sc, "video")
 	go updSourceMap[sn].InitRtpWriter(sc, "audio")
@@ -166,7 +166,7 @@ func DelRTPsource(sc *core.StreamConfig) {
 	})
 	wssHub.Broadcast <- data
 
-	updSourceMap[sn].wg.Add(4)
+	updSourceMap[sn].wg.Add(3)
 	updSourceMap[sn].cancel()
 	updSourceMap[sn].wg.Wait()
 
