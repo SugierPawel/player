@@ -350,7 +350,7 @@ func (l *updSource) InitRtpWriter(sc *core.StreamConfig, kind string) {
 					log.Printf("InitRtp, kind: %s, sn: %s, WriteSample error: %s", kind, sn, err)
 				}
 			}
-		case <-time.After(1000):
+		case <-time.After(100000):
 		}
 	}
 }
