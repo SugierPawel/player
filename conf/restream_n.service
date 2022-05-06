@@ -1,11 +1,11 @@
 [Unit]
-Description=PolsatWebRTCffmpeg_1
+Description=polsat_restream_1
 After=NetworkManager-wait-online.service network.target network-online.target dbus.service
 Wants=NetworkManager-wait-online.service network-online.target
 Requires=dbus.service
 
 [Service]
-ExecStart=/home/scripts/./polsat_webrtc.sh /home/scripts/./polsat_webrtc_1 224.10.11.120:1111 127.0.0.1 1111
+ExecStart=/home/scripts/./polsat_restream.sh /home/scripts/./polsat_restream_1 224.10.11.120:1111 224.11.11.1:1111
 User=root
 Restart=always
 Type=simple
@@ -13,7 +13,7 @@ RestartSec=10
 StartLimitInterval=10
 StandardOutput=syslog
 StandardError=syslog
-SyslogIdentifier=polsat_webrtc_1
+SyslogIdentifier=polsat_restream_1
 
 [Install]
 WantedBy=multi-user.target
