@@ -576,20 +576,6 @@ func registerReceiver(client *wss.Client) {
 					}
 				}
 			}()*/
-			/*go func() {
-				for {
-					for _, receiver := range ReceiversWebrtcMap[sn].peerConnection.GetReceivers() {
-						pkts, a, err := receiver.ReadRTCP()
-						if err != nil {
-							log.Printf(">> receiver >> a: %v, rtcpErr: %s", a, err)
-							continue
-						}
-						for i, pkt := range pkts {
-							log.Printf(">> receiver >> pkt[%d], SSRC: %d", i, pkt.DestinationSSRC())
-						}
-					}
-				}
-			}()*/
 
 			answer, err := ReceiversWebrtcMap[sn].peerConnection.CreateAnswer(nil)
 			check(fName, sn, err)
@@ -609,28 +595,6 @@ func registerReceiver(client *wss.Client) {
 					count++
 				}
 			}
-
-			/*var vssrc string = fmt.Sprint(TracksMap[oc.channel].Direction["Broadcast"].ssrcMap["video"])
-			var assrc string = fmt.Sprint(TracksMap[oc.channel].Direction["Broadcast"].ssrcMap["audio"])
-			var sdp string
-			var count int
-			for _, line := range strings.Split(answer.SDP, "\n") {
-				if line == "" {
-					break
-				}
-				//log.Printf(" >> ANSWER line: %v", line)
-				if strings.Index(line, "a=ssrc:") > -1 {
-					if count > 3 {
-						sdp += "a=ssrc:" + assrc + line[strings.Index(line, " "):] + "\n"
-					} else {
-						sdp += "a=ssrc:" + vssrc + line[strings.Index(line, " "):] + "\n"
-					}
-					count++
-				} else {
-					sdp += line + "\n"
-				}
-			}
-			answer.SDP = sdp*/
 
 			err = ReceiversWebrtcMap[sn].peerConnection.SetLocalDescription(answer)
 			check(fName, sn, err)
