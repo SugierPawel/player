@@ -145,7 +145,7 @@ func AddRTPsource(sc *core.StreamConfig) {
 	//go updSourceMap[sn].InitRtcpReader(sc)
 	go updSourceMap[sn].InitRtpReader(sc)
 	go updSourceMap[sn].InitRtpWriter(sc, "video")
-	//go updSourceMap[sn].InitRtpWriter(sc, "audio")
+	go updSourceMap[sn].InitRtpWriter(sc, "audio")
 
 	jsonStr, _ := json.Marshal(sc)
 	data, _ := json.Marshal(&JsMessage{
@@ -350,7 +350,7 @@ func (l *updSource) InitRtpWriter(sc *core.StreamConfig, kind string) {
 					log.Printf("InitRtp, kind: %s, sn: %s, WriteSample error: %s", kind, sn, err)
 				}
 			}
-		default:
+		case <-time.After(1000):
 		}
 	}
 }
