@@ -1,6 +1,3 @@
-//go:build !js
-// +build !js
-
 package main
 
 import (
@@ -30,9 +27,10 @@ import (
 )
 
 const (
-	sleepTime     = time.Millisecond * 100
-	serverAddress = "172.26.9.100"          //"172.26.9.100"
-	webSocketAddr = serverAddress + ":2000" //"172.26.9.100:2000" "127.0.0.1:2000"
+	updWriteSleepTime = 100000
+	sleepTime         = time.Millisecond * 100
+	serverAddress     = "172.26.9.100"          //"172.26.9.100"
+	webSocketAddr     = serverAddress + ":2000" //"172.26.9.100:2000" "127.0.0.1:2000"
 )
 
 var wssHub *wss.Hub
@@ -350,7 +348,7 @@ func (l *updSource) InitRtpWriter(sc *core.StreamConfig, kind string) {
 					log.Printf("InitRtp, kind: %s, sn: %s, WriteSample error: %s", kind, sn, err)
 				}
 			}
-		case <-time.After(100000):
+		case <-time.After(updWriteSleepTime):
 		}
 	}
 }
