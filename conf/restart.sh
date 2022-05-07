@@ -13,8 +13,6 @@ git pull origin master
 rm -rf player
 go build
 
-service polsat_restream_1 start
-service polsat_restream_2 start
 service polsat_webrtc_1 start
 service polsat_webrtc_2 start
 
