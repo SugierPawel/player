@@ -1097,6 +1097,13 @@ var Player = function (m)
 };
 !function ()
 {
+    const resizeObserver = new ResizeObserver(entries => {
+        window.requestAnimationFrame(() => {
+            if (!Array.isArray(entries) || !entries.length) {
+                return;
+            }
+        });
+    });
     window["Engine"] = Engine(new Object());
     Engine.Init();
     Engine.RegisterModule(Tools);
