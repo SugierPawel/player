@@ -303,7 +303,6 @@ func (l *updSource) InitRtpReader(sc *core.StreamConfig) {
 				log.Printf("InitRtpReader, sn: %s, ReadFrom error: %s", sn, err)
 				break
 			}
-			log.Printf("InitRtpReader, sn: %s, kind: %s, n: %d", sn, kind, n)
 			rtpPacket := &rtp.Packet{}
 			if err = rtpPacket.Unmarshal(packet[:n]); err != nil {
 				log.Printf("InitRtpReader, sn: %s, rtpPacket.Unmarshal error: %s", sn, err)
@@ -315,6 +314,8 @@ func (l *updSource) InitRtpReader(sc *core.StreamConfig) {
 			case 97:
 				kind = "audio"
 			}
+			log.Printf("InitRtpReader, sn: %s, kind: %s, n: %d", sn, kind, n)
+
 			l.pktsChanMap[kind] <- rtpPacket
 			l.ssrcMutex.Lock()
 			l.ssrcMap[kind] = fmt.Sprint(rtpPacket.SSRC)
