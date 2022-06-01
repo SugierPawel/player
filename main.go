@@ -317,9 +317,11 @@ func (l *updSource) InitRtpReader(sc *core.StreamConfig) {
 			//log.Printf("InitRtpReader, sn: %s, kind: %s, n: %d, payload: %d", sn, kind, n, rtpPacket.Header.PayloadType)
 
 			l.pktsChanMap[kind] <- rtpPacket
-			l.ssrcMutex.Lock()
-			l.ssrcMap[kind] = fmt.Sprint(rtpPacket.SSRC)
-			l.ssrcMutex.Unlock()
+			if _, ok := l.ssrcMap[kind]; !ok {
+				l.ssrcMutex.Lock()
+				l.ssrcMap[kind] = fmt.Sprint(rtpPacket.SSRC)
+				l.ssrcMutex.Unlock()
+			}
 		}
 	}
 }
