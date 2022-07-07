@@ -27,7 +27,6 @@ cp etc/turnserver.conf /etc/turnserver.conf
 chmod +x polsat_restream.sh
 chmod +x polsat_webrtc.sh
 chmod +x restart.sh
-chmod +x install.sh
 
 mkdir /home/scripts
 cp polsat_restream.sh /home/scripts/polsat_restream.sh
