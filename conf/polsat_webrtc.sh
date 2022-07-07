@@ -14,10 +14,10 @@ audio_localrtcpport=$(($port + 3))
 
 ttl=1
 buffer_size=1M
-fifo_size=8192
+pkt_size=1200
 
-video_out="rtp://@"$address_out":"$port"?ttl="$ttl"&rtcpport="$rtcpport"&localrtcpport="$video_localrtcpport"&buffer_size=188000&pkt_size=1200"
-audio_out="rtp://@"$address_out":"$port"?ttl="$ttl"&rtcpport="$rtcpport"&localrtcpport="$audio_localrtcpport"&buffer_size=188000&pkt_size=1200"
+video_out="rtp://@"$address_out":"$port"?ttl="$ttl"&rtcpport="$rtcpport"&localrtcpport="$video_localrtcpport"&buffer_size="$buffer_size"&pkt_size="$pkt_size
+audio_out="rtp://@"$address_out":"$port"?ttl="$ttl"&rtcpport="$rtcpport"&localrtcpport="$audio_localrtcpport"&buffer_size="$buffer_size"&pkt_size="$pkt_size
 
 echo ""
 echo "video_in="$video_in

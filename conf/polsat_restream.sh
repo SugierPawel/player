@@ -6,12 +6,10 @@ ffmpeg=$1
 address_in=$2
 device_out_nr=$3
 
-ttl=10
-buffer_size_in=1M
-buffer_size_out=1M
+buffer_size=1M
 fifo_size=8192
 
-in="rtp://@"$address_in"?pkt_size=1316&buffer_size="$buffer_size_in"&overrun_nonfatal=1&fifo_size="$fifo_size
+in="rtp://@"$address_in"?pkt_size=1316&buffer_size="$buffer_size"&fifo_size="$fifo_size"&overrun_nonfatal=1"
 video_out="/dev/video"$device_out_nr
 audio_out="hw:2,1,"$device_out_nr
 
