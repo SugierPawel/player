@@ -651,7 +651,7 @@ var WebRTC = function (m)
     
     m.SetRemoteDescription = function (sdp)
     {
-        sdp = sdp.replace("useinbandfec=1", "useinbandfec=0");
+        //sdp = sdp.replace("useinbandfec=1", "useinbandfec=0");
         var _sdp = new RTCSessionDescription({type : 'answer', sdp : sdp});
         m.rtcpc.setRemoteDescription(_sdp).then(function()
         {
@@ -837,8 +837,6 @@ var WebRTC = function (m)
         m.rtcpc.createOffer({iceRestart:true})
         .then(function(offer)
         {
-            console.log("OFFER>>>", offer);
-            //offer.sdp = offer.sdp.replace("useinbandfec=1", "useinbandfec=0");
             return m.rtcpc.setLocalDescription(offer);
         })
         .then(function()
