@@ -5,7 +5,7 @@ Wants=NetworkManager-wait-online.service network-online.target polsat_restream_2
 Requires=dbus.service
 
 [Service]
-ExecStart=/home/scripts/./polsat_webrtc.sh /home/scripts/./polsat_webrtc_1 1 224.11.11.1 2222
+ExecStart=/home/scripts/./polsat_webrtc.sh /home/scripts/./polsat_webrtc_2 1 224.11.11.1 2222
 User=root
 Restart=always
 Type=simple
