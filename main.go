@@ -316,8 +316,9 @@ func (l *updSource) InitRtpReader(sc *core.StreamConfig) {
 			case 97:
 				kind = "audio"
 			}
+			log.Printf("InitRtpReader, sn: %s, kind: %s, n: %d, payload: %d - break!", sn, kind, n, rtpPacket.Header.PayloadType)
+
 			if kind == "na" {
-				log.Printf("InitRtpReader, sn: %s, kind: %s, n: %d, payload: %d - break!", sn, kind, n, rtpPacket.Header.PayloadType)
 				break
 			}
 			l.pktsChanMap[kind] <- rtpPacket
