@@ -311,6 +311,7 @@ func (l *updSource) InitRtpReader(sc *core.StreamConfig) {
 			}
 			kind = "na"
 			switch rtpPacket.Header.PayloadType {
+			case 33:
 			case 96:
 				kind = "video"
 			case 97:
