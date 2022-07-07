@@ -41,7 +41,7 @@ $ffmpeg \
 -hwaccel cuda \
 -hwaccel_output_format cuda \
 -rtbufsize 64M \
--f mpegts \
+-f rtp \
 -dn -sn \
 -resize "$out_w"x"$out_h" \
 -c:v h264_cuvid \
