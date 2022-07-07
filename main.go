@@ -284,8 +284,8 @@ func (l *updSource) InitRtpReader(sc *core.StreamConfig) {
 	IPIn := ini.SCMap[sn].IPIn
 	var port = ini.SCMap[sn].PortIn
 
-	//l.rtpConn, err = net.ListenUDP("udp", &net.UDPAddr{IP: net.ParseIP(IPIn), Port: port})
-	l.rtpConn, err = net.ListenMulticastUDP("udp", nil, &net.UDPAddr{IP: net.ParseIP(IPIn), Port: port})
+	l.rtpConn, err = net.ListenUDP("udp", &net.UDPAddr{IP: net.ParseIP(IPIn), Port: port})
+	//l.rtpConn, err = net.ListenMulticastUDP("udp", nil, &net.UDPAddr{IP: net.ParseIP(IPIn), Port: port})
 	if err != nil {
 		log.Printf("InitRtpReader, sn: %s, IPIn: %s, port: %d, err: %s", sn, IPIn, port, err)
 		return
