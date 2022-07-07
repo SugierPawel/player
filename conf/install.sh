@@ -8,6 +8,12 @@ cp etc/rsyslog.d/polsat_restream_2.conf /etc/rsyslog.d/polsat_restream_2.conf
 cp etc/rsyslog.d/polsat_webrtc_1.conf /etc/rsyslog.d/polsat_webrtc_1.conf
 cp etc/rsyslog.d/polsat_webrtc_2.conf /etc/rsyslog.d/polsat_webrtc_2.conf
 
+touch /var/log/polsat_player.log
+touch /var/log/polsat_restream_1.log
+touch /var/log/polsat_restream_2.log
+touch /var/log/polsat_webrtc_1.log
+touch /var/log/polsat_webrtc_2.log
+
 service rsyslog restart
 
 cp etc/systemd/system/polsat_player.service /etc/systemd/system/polsat_player.service
