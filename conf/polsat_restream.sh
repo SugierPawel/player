@@ -11,7 +11,7 @@ buffer_size_in=1M
 buffer_size_out=1M
 fifo_size=8192
 
-in="udp://"$address_in"?pkt_size=1316&buffer_size="$buffer_size_in"&overrun_nonfatal=1&fifo_size="$fifo_size
+in="rtp://@"$address_in"?pkt_size=1316&buffer_size="$buffer_size_in"&overrun_nonfatal=1&fifo_size="$fifo_size
 video_out="/dev/video"$device_out_nr
 audio_out="hw:2,1,"$device_out_nr
 
