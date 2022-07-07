@@ -309,13 +309,12 @@ func (l *updSource) InitRtpReader(sc *core.StreamConfig) {
 				log.Printf("InitRtpReader, sn: %s, rtpPacket.Unmarshal error: %s", sn, err)
 				break
 			}
+			kind = "na"
 			switch rtpPacket.Header.PayloadType {
 			case 96:
 				kind = "video"
 			case 97:
 				kind = "audio"
-			default:
-				kind = "na"
 			}
 			if kind == "na" {
 				log.Printf("InitRtpReader, sn: %s, kind: %s, n: %d, payload: %d - break!", sn, kind, n, rtpPacket.Header.PayloadType)
