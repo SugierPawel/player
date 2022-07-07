@@ -16,8 +16,8 @@ ttl=1
 buffer_size=1M
 fifo_size=8192
 
-video_out="rtp://"$address_out":"$port"?ttl="$ttl"&rtcpport="$rtcpport"&localrtcpport="$video_localrtcpport"&buffer_size=188000&pkt_size=1200"
-audio_out="rtp://"$address_out":"$port"?ttl="$ttl"&rtcpport="$rtcpport"&localrtcpport="$audio_localrtcpport"&buffer_size=188000&pkt_size=1200"
+video_out="rtp://@"$address_out":"$port"?ttl="$ttl"&rtcpport="$rtcpport"&localrtcpport="$video_localrtcpport"&buffer_size=188000&pkt_size=1200"
+audio_out="rtp://@"$address_out":"$port"?ttl="$ttl"&rtcpport="$rtcpport"&localrtcpport="$audio_localrtcpport"&buffer_size=188000&pkt_size=1200"
 
 echo ""
 echo "video_in="$video_in
@@ -44,5 +44,5 @@ ffmpeg \
 -c:v copy \
 -f rtp "$video_out" \
 -map 1:a:0 \
--c:a opus -strict -2 -ac 1 \
+-c:a opus -strict -2 -ac 2 \
 -f rtp "$audio_out"
