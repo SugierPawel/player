@@ -44,5 +44,5 @@ ffmpeg \
 -c:v copy \
 -f rtp -payload_type 96 "$video_out" \
 -map 1:a:0 \
--c:a opus -strict -2 -ac 2 \
+-c:a opus -strict -2 -ac 2 -b:a 48k \
 -f rtp -payload_type 97 "$audio_out"
