@@ -837,6 +837,7 @@ var WebRTC = function (m)
         m.rtcpc.createOffer({iceRestart:true})
         .then(function(offer)
         {
+            offer = offer.replace("useinbandfec=1", "useinbandfec=0");
             return m.rtcpc.setLocalDescription(offer);
         })
         .then(function()
