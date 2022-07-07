@@ -317,12 +317,9 @@ func (l *updSource) InitRtpReader(sc *core.StreamConfig) {
 			default:
 				kind = "na"
 			}
-			log.Printf("InitRtpReader, sn: %s, kind: %s, n: %d, payload: %d", sn, kind, n, rtpPacket.Header.PayloadType)
 			if kind == "na" {
 				log.Printf("InitRtpReader, sn: %s, kind: %s, n: %d, payload: %d - break!", sn, kind, n, rtpPacket.Header.PayloadType)
 				break
-			} else {
-				log.Printf("InitRtpReader, sn: %s, kind: %s, n: %d, payload: %d", sn, kind, n, rtpPacket.Header.PayloadType)
 			}
 			l.pktsChanMap[kind] <- rtpPacket
 			if _, ok := l.ssrcMap[kind]; !ok {
