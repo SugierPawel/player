@@ -195,7 +195,7 @@ func (l *updSource) InitRtcpReader(sc *core.StreamConfig) {
 			l.rtcpConn.Close()
 			return
 		default:
-			p := make([]byte, 1200)
+			p := make([]byte, 1500)
 			rtcpN, _, err := l.rtcpConn.ReadFrom(p)
 			if err != nil {
 				log.Printf("InitRtcp, sn: %s, ReadFrom error: %s", sn, err)
@@ -298,7 +298,7 @@ func (l *updSource) InitRtpReader(sc *core.StreamConfig) {
 			l.rtpConn.Close()
 			return
 		default:
-			packet := make([]byte, 1200)
+			packet := make([]byte, 1500)
 			n, _, err := l.rtpConn.ReadFrom(packet)
 			if err != nil {
 				log.Printf("InitRtpReader, sn: %s, ReadFrom error: %s", sn, err)

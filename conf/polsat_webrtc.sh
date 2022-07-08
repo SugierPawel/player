@@ -14,10 +14,11 @@ audio_localrtcpport=$(($port + 3))
 
 ttl=1
 buffer_size=1M
-pkt_size=1200
+video_pkt_size=1200
+audio_pkt_size=200
 
-video_out="rtp://@"$address_out":"$port"?ttl="$ttl"&rtcpport="$rtcpport"&localrtcpport="$video_localrtcpport"&buffer_size="$buffer_size"&pkt_size="$pkt_size
-audio_out="rtp://@"$address_out":"$port"?ttl="$ttl"&rtcpport="$rtcpport"&localrtcpport="$audio_localrtcpport"&buffer_size="$buffer_size"&pkt_size="$pkt_size
+video_out="rtp://@"$address_out":"$port"?ttl="$ttl"&rtcpport="$rtcpport"&localrtcpport="$video_localrtcpport"&buffer_size="$buffer_size"&pkt_size="$video_pkt_size
+audio_out="rtp://@"$address_out":"$port"?ttl="$ttl"&rtcpport="$rtcpport"&localrtcpport="$audio_localrtcpport"&buffer_size="$buffer_size"&pkt_size="$audio_pkt_size
 
 echo ""
 echo "video_in="$video_in
@@ -44,5 +45,5 @@ ffmpeg \
 -c:v copy \
 -f rtp -payload_type 96 "$video_out" \
 -map 1:a:0 \
--c:a libopus -strict -2 -ac 2 -b:a 32k \
+-c:a libopus -frame_duration 80 -apply_phase_inv 0 -strict -2 -ac 2 -b:a 16k \
 -f rtp -payload_type 97 "$audio_out"
