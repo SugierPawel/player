@@ -322,7 +322,7 @@ func (l *updSource) InitRtpReader(sc *core.StreamConfig) {
 			} else if n > 500 {
 				kind = "video"
 			}
-			log.Printf("InitRtpReader, sn: %s, kind: %s, n: %d, payload: %d - break!", sn, kind, n, rtpPacket.Header.PayloadType)
+			//log.Printf("InitRtpReader, sn: %s, kind: %s, n: %d, payload: %d", sn, kind, n, rtpPacket.Header.PayloadType)
 
 			if kind == "na" {
 				break
@@ -658,7 +658,7 @@ func main() {
 	codecMap["audio"] = Codecs{
 		MimeType:      webrtc.MimeTypeOpus,
 		SampleRate:    48000,
-		PacketMaxLate: 100,
+		PacketMaxLate: 10,
 		dep:           &codecs.OpusPacket{},
 	}
 
