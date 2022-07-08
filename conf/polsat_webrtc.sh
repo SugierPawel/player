@@ -14,7 +14,7 @@ audio_localrtcpport=$(($port + 3))
 
 ttl=1
 video_buffer_size=1M
-audio_budder_size=120K
+audio_buffer_size=120K
 video_pkt_size=1200
 audio_pkt_size=1200
 
