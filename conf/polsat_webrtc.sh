@@ -29,7 +29,7 @@ echo "audio_out="$audio_out
 echo ""
 
 main_threads=1
-thread_queue_size=128
+thread_queue_size=512
 
 v4l2loopback-ctl set-fps 25 /dev/video"$device_in_nr"
 
@@ -46,5 +46,5 @@ ffmpeg \
 -c:v copy \
 -f rtp -payload_type 96 "$video_out" \
 -map 1:a:0 \
--c:a libopus -frame_duration 20 -apply_phase_inv 0 -strict -2 -ac 2 -b:a 16k \
+-c:a libopus -compression_level 10 -frame_duration 60 -apply_phase_inv 0 -strict -2 -ac 2 -b:a 16k \
 -f rtp -payload_type 97 "$audio_out"
