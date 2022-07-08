@@ -322,7 +322,7 @@ func (l *updSource) InitRtpReader(sc *core.StreamConfig) {
 			} else if n > 500 {
 				kind = "video"
 			}
-			//log.Printf("InitRtpReader, sn: %s, kind: %s, n: %d, payload: %d - break!", sn, kind, n, rtpPacket.Header.PayloadType)
+			log.Printf("InitRtpReader, sn: %s, kind: %s, n: %d, payload: %d - break!", sn, kind, n, rtpPacket.Header.PayloadType)
 
 			if kind == "na" {
 				break
