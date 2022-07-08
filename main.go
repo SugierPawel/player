@@ -658,7 +658,7 @@ func main() {
 	codecMap["audio"] = Codecs{
 		MimeType:      webrtc.MimeTypeOpus,
 		SampleRate:    48000,
-		PacketMaxLate: 2,
+		PacketMaxLate: 50,
 		dep:           &codecs.OpusPacket{},
 	}
 
