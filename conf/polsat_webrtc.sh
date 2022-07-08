@@ -13,12 +13,13 @@ video_localrtcpport=$(($port + 2))
 audio_localrtcpport=$(($port + 3))
 
 ttl=1
-buffer_size=1M
+video_buffer_size=1M
+audio_budder_size=120K
 video_pkt_size=1200
-audio_pkt_size=200
+audio_pkt_size=1200
 
-video_out="rtp://@"$address_out":"$port"?ttl="$ttl"&rtcpport="$rtcpport"&localrtcpport="$video_localrtcpport"&buffer_size="$buffer_size"&pkt_size="$video_pkt_size
-audio_out="rtp://@"$address_out":"$port"?ttl="$ttl"&rtcpport="$rtcpport"&localrtcpport="$audio_localrtcpport"&buffer_size="$buffer_size"&pkt_size="$audio_pkt_size
+video_out="rtp://@"$address_out":"$port"?ttl="$ttl"&rtcpport="$rtcpport"&localrtcpport="$video_localrtcpport"&buffer_size="$video_buffer_size"&pkt_size="$video_pkt_size
+audio_out="rtp://@"$address_out":"$port"?ttl="$ttl"&rtcpport="$rtcpport"&localrtcpport="$audio_localrtcpport"&buffer_size="$audio_buffer_size"&pkt_size="$audio_pkt_size
 
 echo ""
 echo "video_in="$video_in
@@ -28,7 +29,7 @@ echo "audio_out="$audio_out
 echo ""
 
 main_threads=1
-thread_queue_size=2048
+thread_queue_size=128
 
 v4l2loopback-ctl set-fps 25 /dev/video"$device_in_nr"
 
@@ -45,5 +46,5 @@ ffmpeg \
 -c:v copy \
 -f rtp -payload_type 96 "$video_out" \
 -map 1:a:0 \
--c:a libopus -frame_duration 80 -apply_phase_inv 0 -strict -2 -ac 2 -b:a 16k \
+-c:a libopus -frame_duration 20 -apply_phase_inv 0 -strict -2 -ac 2 -b:a 16k \
 -f rtp -payload_type 97 "$audio_out"
