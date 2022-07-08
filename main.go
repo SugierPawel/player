@@ -311,18 +311,18 @@ func (l *updSource) InitRtpReader(sc *core.StreamConfig) {
 			}
 			kind = "na"
 			switch rtpPacket.Header.PayloadType {
-			//case 33:
+			case 33:
 			case 96:
 				kind = "video"
 			case 97:
 				kind = "audio"
 			}
-			if n > 30 && n < 500 {
+			/*if n > 30 && n < 500 {
 				kind = "audio"
 			} else if n > 500 {
 				kind = "video"
-			}
-			log.Printf("InitRtpReader, sn: %s, kind: %s, n: %d, payload: %d", sn, kind, n, rtpPacket.Header.PayloadType)
+			}*/
+			//log.Printf("InitRtpReader, sn: %s, kind: %s, n: %d, payload: %d", sn, kind, n, rtpPacket.Header.PayloadType)
 
 			if kind == "na" {
 				break
