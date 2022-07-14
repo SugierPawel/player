@@ -37,7 +37,6 @@ ffmpeg \
 -hide_banner \
 -threads $main_threads \
 -thread_queue_size $thread_queue_size \
--re \
 -fflags +genpts+nobuffer+igndts \
 -i "$video_in" \
 -f alsa \
