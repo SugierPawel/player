@@ -20,7 +20,7 @@ echo "audio_out="$audio_out
 echo ""
 
 main_threads=1
-thread_queue_size=2048
+thread_queue_size=4096
 
 out_w=640
 out_h=360
@@ -38,7 +38,7 @@ $ffmpeg \
 -hwaccel_device 0 \
 -hwaccel cuda \
 -hwaccel_output_format cuda \
--rtbufsize 64M \
+-rtbufsize 2M \
 -f rtp \
 -dn -sn \
 -resize "$out_w"x"$out_h" \
@@ -47,6 +47,7 @@ $ffmpeg \
 -metadata service_name=$ffmpeg \
 -map 0:a:0 \
 -c:a pcm_s16le -b:a 16k \
+-g:a 25 \
 -f alsa "$audio_out" \
 -map 0:v:0 \
 -g:v 25 \
