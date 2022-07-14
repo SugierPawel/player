@@ -316,6 +316,7 @@ func (l *updSource) InitRtpReader(sc *core.StreamConfig) {
 				kind = "video"
 			case 97:
 				kind = "audio"
+				log.Printf("InitRtpReader, sn: %s, kind: %s, n: %d, payload: %d", sn, kind, n, rtpPacket.Header.PayloadType)
 			}
 			/*if n > 30 && n < 500 {
 				kind = "audio"
