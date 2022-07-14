@@ -47,5 +47,5 @@ ffmpeg \
 -c:v copy \
 -f rtp -payload_type 96 "$video_out" \
 -map 1:a:0 \
--c:a libopus -ar 44100 -compression_level 10 -frame_duration 10 -apply_phase_inv 0 -strict -2 -ac 2 -b:a 16k \
+-c:a libopus -compression_level 10 -frame_duration 10 -apply_phase_inv 0 -strict -2 -ac 2 -b:a 16k \
 -f rtp -payload_type 97 "$audio_out"
