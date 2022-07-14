@@ -38,9 +38,11 @@ ffmpeg \
 -threads $main_threads \
 -thread_queue_size $thread_queue_size \
 -re \
+-fflags +igndts \
 -i "$video_in" \
 -f alsa \
 -thread_queue_size $thread_queue_size \
+-fflags +igndts \
 -i "$audio_in" \
 -map 0:v:0 \
 -c:v copy \
