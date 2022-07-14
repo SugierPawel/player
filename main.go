@@ -316,7 +316,9 @@ func (l *updSource) InitRtpReader(sc *core.StreamConfig) {
 				kind = "video"
 			case 97:
 				kind = "audio"
-				log.Printf("InitRtpReader, sn: %s, kind: %s, n: %d, ts: %d, sn: %d", sn, kind, n, rtpPacket.Header.Timestamp, rtpPacket.Header.SequenceNumber)
+				if sn == "224.11.11.1:1111" {
+					log.Printf("InitRtpReader, sn: %s, kind: %s, n: %d, ts: %d, sn: %d", sn, kind, n, rtpPacket.Header.Timestamp, rtpPacket.Header.SequenceNumber)
+				}
 			}
 			/*if n > 30 && n < 500 {
 				kind = "audio"
