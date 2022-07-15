@@ -132,7 +132,7 @@ func AddRTPsource(sc *core.StreamConfig) {
 			uint32(codecMap[kind].SampleRate))
 		var err error
 		updSourceMap[sn].tracks[kind], err = webrtc.NewTrackLocalStaticSample(
-			webrtc.RTPCodecCapability{MimeType: codecMap[kind].MimeType},
+			webrtc.RTPCodecCapability{MimeType: codecMap[kind].MimeType, ClockRate: uint32(codecMap[kind].SampleRate)},
 			kind,
 			sc.ChannelName)
 		if err != nil {
