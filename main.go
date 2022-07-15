@@ -365,7 +365,7 @@ func (l *updSource) InitRtpWriter(sc *core.StreamConfig, kind string) {
 					log.Printf("InitRtp, kind: %s, sn: %s, WriteSample error: %s", kind, sn, err)
 				}
 			}
-		case <-time.After(updWriteSleepTime):
+			//case <-time.After(updWriteSleepTime):
 		}
 	}
 }
