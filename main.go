@@ -27,7 +27,7 @@ import (
 )
 
 const (
-	updWriteSleepTime = 1000000
+	updWriteSleepTime = 10000000
 	sleepTime         = time.Millisecond * 100
 	serverAddress     = "172.26.9.100"          //"172.26.9.100"
 	webSocketAddr     = serverAddress + ":2000" //"172.26.9.100:2000" "127.0.0.1:2000"
