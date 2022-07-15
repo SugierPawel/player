@@ -651,7 +651,8 @@ var WebRTC = function (m)
     
     m.SetRemoteDescription = function (sdp)
     {
-        //sdp = sdp.replace("useinbandfec=1", "useinbandfec=0");
+        sdp = sdp.replace("useinbandfec=1", "useinbandfec=0");
+        sdp = sdp.replace("minptime=10", "minptime=100");
         var _sdp = new RTCSessionDescription({type : 'answer', sdp : sdp});
         m.rtcpc.setRemoteDescription(_sdp).then(function()
         {
