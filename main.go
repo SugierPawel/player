@@ -27,7 +27,7 @@ import (
 )
 
 const (
-	updWriteSleepTime = 10000000
+	updWriteSleepTime = 100000
 	sleepTime         = time.Millisecond * 100
 	serverAddress     = "172.26.9.100"          //"172.26.9.100"
 	webSocketAddr     = serverAddress + ":2000" //"172.26.9.100:2000" "127.0.0.1:2000"
@@ -655,13 +655,13 @@ func main() {
 	codecMap["video"] = Codecs{
 		MimeType:      webrtc.MimeTypeH264,
 		SampleRate:    90000,
-		PacketMaxLate: 100,
+		PacketMaxLate: 10,
 		dep:           &codecs.H264Packet{},
 	}
 	codecMap["audio"] = Codecs{
 		MimeType:      webrtc.MimeTypeOpus,
 		SampleRate:    48000,
-		PacketMaxLate: 500,
+		PacketMaxLate: 10,
 		dep:           &codecs.OpusPacket{},
 	}
 
