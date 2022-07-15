@@ -653,6 +653,7 @@ var WebRTC = function (m)
     {
         sdp = sdp.replace("useinbandfec=1", "useinbandfec=0");
         sdp = sdp.replace("minptime=10", "minptime=0,sprop-stereo=1");
+        sdp = sdp.replace("a=rtcp-mux", "");
         var _sdp = new RTCSessionDescription({type : 'answer', sdp : sdp});
         m.rtcpc.setRemoteDescription(_sdp).then(function()
         {
