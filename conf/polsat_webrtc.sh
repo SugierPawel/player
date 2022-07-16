@@ -47,5 +47,5 @@ ffmpeg \
 -f rtp -payload_type 96 -max_delay 0 -application lowdelay "$video_out" \
 -map 1:a:0 \
 -af 'adelay=0|0' \
--c:a libopus -sample_fmt s16 -vbr off -application lowdelay -compression_level 10 -frame_duration 60 -apply_phase_inv 0 -strict -2 -ac 2 -b:a 16k \
+-c:a libopus -sample_fmt s16 -vbr off -application lowdelay -compression_level 10 -frame_duration 60 -apply_phase_inv 1 -strict -2 -ac 2 -b:a 16k \
 -f rtp -payload_type 97 -max_delay 0 -application lowdelay "$audio_out"
