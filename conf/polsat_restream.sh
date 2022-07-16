@@ -11,7 +11,7 @@ fifo_size=8192
 
 in="rtp://@"$address_in"?pkt_size=1316&buffer_size="$buffer_size"&fifo_size="$fifo_size"&overrun_nonfatal=1"
 video_out="/dev/video"$device_out_nr
-audio_out="hw:2,1,"$device_out_nr
+audio_out="hw:2,0,"$device_out_nr
 
 echo ""
 echo "in="$in

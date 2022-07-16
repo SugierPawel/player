@@ -7,7 +7,7 @@ address_out=$3
 port=$4
 
 video_in="/dev/video"$device_in_nr
-audio_in="hw:2,0,"$device_in_nr
+audio_in="hw:2,1,"$device_in_nr
 rtcpport=$(($port + 1))
 video_localrtcpport=$(($port + 2))
 audio_localrtcpport=$(($port + 3))
@@ -47,7 +47,7 @@ ffmpeg \
 -f rtp -payload_type 96 "$video_out" \
 -map 1:a:0 \
 -af 'adelay=0|0' \
--c:a libopus -sample_fmt s16 -vbr off -application lowdelay -compression_level 10 -frame_duration 20 -apply_phase_inv 1 -strict -2 -ac 2 -b:a 16k \
+-c:a libopus -sample_fmt s16 -vbr off -application lowdelay -compression_level 10 -frame_duration 60 -apply_phase_inv 1 -strict -2 -ac 2 -b:a 16k \
 -f rtp -payload_type 97 -max_delay 0 -application lowdelay "$audio_out"
 
 #-c:a libopus -sample_fmt s16 -vbr off -application lowdelay -compression_level 10 -frame_duration 120 -apply_phase_inv 1 -strict -2 -ac 2 -b:a 16k \
