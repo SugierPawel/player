@@ -46,8 +46,7 @@ $ffmpeg \
 -re -i "$in" \
 -metadata service_name=$ffmpeg \
 -map 0:a:0 \
--c:a pcm_s16le -b:a 16k \
--g:a 25 \
+-c:a pcm_s16le -ac 2 -ar 48000 -b:a 16k \
 -f alsa "$audio_out" \
 -map 0:v:0 \
 -g:v 25 \

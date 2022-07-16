@@ -16,7 +16,7 @@ ttl=1
 video_buffer_size=1M
 audio_buffer_size=120K
 video_pkt_size=1200
-audio_pkt_size=1200
+audio_pkt_size=400
 
 video_out="rtp://@"$address_out":"$port"?ttl="$ttl"&rtcpport="$rtcpport"&localrtcpport="$video_localrtcpport"&buffer_size="$video_buffer_size"&pkt_size="$video_pkt_size
 audio_out="rtp://@"$address_out":"$port"?ttl="$ttl"&rtcpport="$rtcpport"&localrtcpport="$audio_localrtcpport"&buffer_size="$audio_buffer_size"&pkt_size="$audio_pkt_size
@@ -41,11 +41,11 @@ ffmpeg \
 -i "$video_in" \
 -f alsa \
 -thread_queue_size $thread_queue_size \
--fflags +genpts+nobuffer+igndts \
 -i "$audio_in" \
 -map 0:v:0 \
 -c:v copy \
--f rtp -payload_type 96 "$video_out" \
+-f rtp -payload_type 96 -max_delay 0 -application lowdelay "$video_out" \
 -map 1:a:0 \
--c:a libopus -compression_level 10 -frame_duration 10 -apply_phase_inv 0 -strict -2 -ac 2 -b:a 16k \
--f rtp -payload_type 97 "$audio_out"
+-af 'adelay=0|0' \
+-c:a libopus -sample_fmt s16 -vbr off -application lowdelay -compression_level 10 -frame_duration 60 -apply_phase_inv 0 -strict -2 -ac 2 -b:a 16k \
+-f rtp -payload_type 97 -max_delay 0 -application lowdelay "$audio_out"
