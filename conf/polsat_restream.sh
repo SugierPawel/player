@@ -20,7 +20,7 @@ echo "audio_out="$audio_out
 echo ""
 
 main_threads=1
-thread_queue_size=4096
+thread_queue_size=512
 
 out_w=640
 out_h=360
@@ -33,6 +33,7 @@ bufsize=1400k
 
 $ffmpeg \
 -hide_banner \
+-fflags +genpts+nobuffer+igndts \
 -threads $main_threads \
 -thread_queue_size $thread_queue_size \
 -hwaccel_device 0 \
