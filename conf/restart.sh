@@ -8,6 +8,12 @@ service polsat_restream_2 stop
 service polsat_player stop
 service coturn stop
 
+rm -rf /var/log/polsat_player.log
+rm -rf /var/log/polsat_restream_1.log
+rm -rf /var/log/polsat_restream_2.log
+rm -rf /var/log/polsat_webrtc_1.log
+rm -rf /var/log/polsat_webrtc_2.log
+
 cd /usr/local/go/src/github.com/SugierPawel/player/
 git pull origin master
 rm -rf player
