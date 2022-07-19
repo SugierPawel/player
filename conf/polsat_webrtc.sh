@@ -43,7 +43,6 @@ ffmpeg \
 -i "$audio_in" \
 -map 0:v:0 \
 -c:v copy \
--vf 'tpad=start_duration=1' \
 -f rtp -payload_type 96 "$video_out" \
 -map 1:a:0 \
 -af 'adelay=0|0' \
