@@ -31,4 +31,4 @@ service polsat_webrtc_2 start
 service coturn start
 service polsat_player start
 
-tail -f /var/log/polsat_player.log
+#tail -f /var/log/polsat_player.log
